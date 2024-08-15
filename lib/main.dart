@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:material_color_utilities/material_color_utilities.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 import 'src/screens/main_screen.dart';
 
 void main() {
@@ -17,6 +19,10 @@ void main() {
   final ColorScheme darkColorScheme = ColorScheme.fromSeed(
     seedColor: Color(primaryColor),
     brightness: Brightness.dark,
+  );
+
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
   );
 
   runApp(MyApp(lightScheme: lightColorScheme, darkScheme: darkColorScheme));
