@@ -5,7 +5,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'src/screens/main_screen.dart';
 
-void main() {
+void main() async{
 
   // 基本カラーをオレンジ色 (#FF9900) に設定
   final int primaryColor = 0xffff9900;
@@ -20,6 +20,9 @@ void main() {
     seedColor: Color(primaryColor),
     brightness: Brightness.dark,
   );
+  
+  // 必要なバインディングを初期化
+  WidgetsFlutterBinding.ensureInitialized();
 
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,

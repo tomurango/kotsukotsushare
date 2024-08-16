@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'mypage_screen.dart';
 import 'share_screen.dart';
 import 'setting_screen.dart';
 import 'create_kotsukotsu_screen.dart';
+import 'login_screen.dart';
 import '../widgets/custom_bottom_app_bar.dart';
 
 class MainScreen extends StatefulWidget {
@@ -39,6 +41,22 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) {
+      Future.microtask(() {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => LoginScreen()),
+        );
+      });
+      return Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      ); // 一時的に空のスクリーンを返す
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: Text(_titles[_selectedIndex]),
