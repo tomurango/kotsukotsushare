@@ -3,7 +3,7 @@ import 'package:material_color_utilities/material_color_utilities.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
-import 'src/screens/main_screen.dart';
+import 'src/auth_wrapper.dart';
 
 void main() async{
 
@@ -20,7 +20,7 @@ void main() async{
     seedColor: Color(primaryColor),
     brightness: Brightness.dark,
   );
-  
+
   // 必要なバインディングを初期化
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -50,7 +50,7 @@ class MyApp extends StatelessWidget {
       title: 'KotsuKotsuShare',
       theme: theme.light(), // ライトテーマを適用
       darkTheme: theme.dark(), // ダークテーマを適用
-      home: MainScreen(),
+      home: AuthWrapper(),
     );
   }
 }

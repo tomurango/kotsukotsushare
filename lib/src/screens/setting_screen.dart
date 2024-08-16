@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'login_screen.dart';
 
 class SettingScreen extends StatelessWidget {
   final Function(int) onNavigate;
@@ -8,7 +10,12 @@ class SettingScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Text('Setting Screen'),
+      child: ElevatedButton(
+        onPressed: () async {
+          await FirebaseAuth.instance.signOut();
+        },
+        child: Text('Logout'),
+      ),
     );
   }
 }

@@ -41,21 +41,7 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
-
-    if (user == null) {
-      Future.microtask(() {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => LoginScreen()),
-        );
-      });
-      return Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
-      ); // 一時的に空のスクリーンを返す
-    }
+    // final user = FirebaseAuth.instance.currentUser;
 
     return Scaffold(
       appBar: AppBar(
