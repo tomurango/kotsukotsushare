@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:material_color_utilities/material_color_utilities.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'firebase_options.dart';
 import 'src/auth_wrapper.dart';
 
@@ -28,7 +29,10 @@ void main() async{
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  runApp(MyApp(lightScheme: lightColorScheme, darkScheme: darkColorScheme));
+  runApp(ProviderScope(child: MyApp(
+    lightScheme: lightColorScheme,
+    darkScheme: darkColorScheme,
+  )));
 }
 
 class MyApp extends StatelessWidget {

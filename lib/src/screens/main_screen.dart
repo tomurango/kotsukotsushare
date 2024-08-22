@@ -1,68 +1,48 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'mypage_screen.dart';
 import 'share_screen.dart';
 import 'setting_screen.dart';
 import 'create_kotsukotsu_screen.dart';
-import 'login_screen.dart';
 import '../widgets/custom_bottom_app_bar.dart';
 
-class MainScreen extends StatefulWidget {
+class MainScreen extends HookConsumerWidget {
   @override
-  _MainScreenState createState() => _MainScreenState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    // useStateで_statefulWidgetのようにローカル状態を管理
+    final selectedIndex = useState(0);
 
-class _MainScreenState extends State<MainScreen> {
-  int _selectedIndex = 0;
-  late List<Widget> _pages;
-
-  @override
-  void initState() {
-    super.initState();
-    // 配列の順番がページに対応する番号であり、CustomBottomAppBarのindexとも対応している
-    _pages = [
-      MypageScreen(onNavigate: _navigateTo),
-      ShareScreen(onNavigate: _navigateTo),
-      SettingScreen(onNavigate: _navigateTo),
+    // ページのリストを設定
+    final pages = [
+      MypageScreen(onNavigate: (index) => selectedIndex.value = index),
+      ShareScreen(onNavigate: (index) => selectedIndex.value = index),
+      SettingScreen(onNavigate: (index) => selectedIndex.value = index),
     ];
-  }
 
-  final List<String> _titles = [
-    'Mypage',
-    'Share',
-    'Create KotsuKotsu',
-  ];
-
-  void _navigateTo(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // final user = FirebaseAuth.instance.currentUser;
+    // タイトルのリスト
+    final titles = ['Mypage', 'Share', 'Create KotsuKotsu'];
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(_titles[_selectedIndex]),
+        title: Text(titles[selectedIndex.value]),
       ),
-      body: _pages[_selectedIndex],
+      body: pages[selectedIndex.value],
       bottomNavigationBar: CustomBottomAppBar(
-        onNavigate: _navigateTo,
-        selectedIndex: _selectedIndex,
+        onNavigate: (index) => selectedIndex.value = index,
+        selectedIndex: selectedIndex.value,
       ),
-      floatingActionButton: _selectedIndex == 0 || _selectedIndex == 1
+      floatingActionButton: selectedIndex.value == 0 || selectedIndex.value == 1
         ? FloatingActionButton(
             onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => CreateKotsuKotsuScreen()),
-                );
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => CreateKotsuKotsuScreen()),
+              );
             },
             tooltip: 'Create KotsuKotsu',
             child: Icon(Icons.add),
-        )
+          )
         : null,
     );
   }

@@ -1,26 +1,26 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'providers/auth_provider.dart';
 import 'screens/login_screen.dart';
 import 'screens/main_screen.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-class AuthWrapper extends StatelessWidget {
+class AuthWrapper extends HookConsumerWidget {
   @override
-  Widget build(BuildContext context) {
-    return StreamBuilder<User?>(
-      stream: FirebaseAuth.instance.authStateChanges(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.active) {
-          User? user = snapshot.data;
-          // ログイン状態に応じて画面を切り替え
-          if (user == null) {
-            return LoginScreen(); // 未ログイン
-          } else {
-            return MainScreen(); // ログイン済み
-          }
+  Widget build(BuildContext context, WidgetRef ref) {
+    final authState = ref.watch(authStateProvider);
+
+    return authState.when(
+      data: (user) {
+        if (user == null) {
+          // 未ログイン状態ならログイン画面を表示
+          return LoginScreen();
         } else {
-          return CircularProgressIndicator(); // 読み込み中
+          // ログイン済みならメイン画面を表示
+          return MainScreen();
         }
       },
+      loading: () => Scaffold(body: Center(child: CircularProgressIndicator())),
+      error: (error, stackTrace) => Scaffold(body: Center(child: Text('Error: $error'))),
     );
   }
 }
