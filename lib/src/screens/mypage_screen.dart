@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../providers/auth_provider.dart';
+import 'create_card_screen.dart';
 
 class MypageScreen extends ConsumerWidget {
   final Function(int) onNavigate;
@@ -30,14 +31,14 @@ class MypageScreen extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Category 1',
+                    '大切なこと',
                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
                   SizedBox(height: 8),
                   cardsAsyncValue.when(
                     data: (cards) {
                       final category1Cards = cards
-                          .where((card) => card.category == 'Category 1')
+                          .where((card) => card.category == 'important')
                           .toList();
 
                       return Column(
@@ -58,6 +59,8 @@ class MypageScreen extends ConsumerWidget {
                               )),
                           if (category1Cards.length < 5)
                             AddCardSkeleton(
+                              title: 'Important',
+                              category: 'important',
                               onTap: () {
                                 // カード追加処理
                               },
@@ -81,14 +84,14 @@ class MypageScreen extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Category 2',
+                    '大切ではないこと',
                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
                   SizedBox(height: 8),
                   cardsAsyncValue.when(
                     data: (cards) {
                       final category2Cards = cards
-                          .where((card) => card.category == 'Category 2')
+                          .where((card) => card.category == 'unimportant')
                           .toList();
 
                       return Column(
@@ -107,7 +110,9 @@ class MypageScreen extends ConsumerWidget {
                                   );
                                 },
                               )),
-                          AddCardSkeleton(
+                          AddCardSkeleton( 
+                            title: 'Unimportant',
+                            category: 'unimportant',
                             onTap: () {
                               // カード追加処理
                             },
@@ -163,9 +168,11 @@ class CardItem extends StatelessWidget {
 }
 
 class AddCardSkeleton extends StatelessWidget {
+  final String title;
+  final String category;
   final VoidCallback onTap;
 
-  AddCardSkeleton({required this.onTap});
+  AddCardSkeleton({required this.title, required this.category, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -178,7 +185,15 @@ class AddCardSkeleton extends StatelessWidget {
           elevation: 2.0,
           color: Colors.grey[300],
           child: InkWell(
-            onTap: onTap,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => CreateCardScreen(
+                  title: title,
+                  category: category,
+                )),
+              );
+            },
             child: Container(
               padding: EdgeInsets.all(16.0),
               child: Center(

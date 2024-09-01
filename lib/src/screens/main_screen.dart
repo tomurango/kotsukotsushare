@@ -4,7 +4,6 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'mypage_screen.dart';
 import 'share_screen.dart';
 import 'setting_screen.dart';
-import 'create_kotsukotsu_screen.dart';
 import '../widgets/custom_bottom_app_bar.dart';
 
 class MainScreen extends HookConsumerWidget {
@@ -21,7 +20,7 @@ class MainScreen extends HookConsumerWidget {
     ];
 
     // タイトルのリスト
-    final titles = ['Mypage', 'Share', 'Create KotsuKotsu'];
+    final titles = ['Mypage', 'Share', 'Setting'];
 
     return Scaffold(
       appBar: AppBar(
@@ -32,18 +31,7 @@ class MainScreen extends HookConsumerWidget {
         onNavigate: (index) => selectedIndex.value = index,
         selectedIndex: selectedIndex.value,
       ),
-      floatingActionButton: selectedIndex.value == 0 || selectedIndex.value == 1
-        ? FloatingActionButton(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => CreateKotsuKotsuScreen()),
-              );
-            },
-            tooltip: 'Create KotsuKotsu',
-            child: Icon(Icons.add),
-          )
-        : null,
+      floatingActionButton: null,
     );
   }
 }
