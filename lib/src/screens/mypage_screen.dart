@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../providers/auth_provider.dart';
 import 'create_card_screen.dart';
+import 'card_memo_screen.dart';
 
 class MypageScreen extends ConsumerWidget {
   final Function(int) onNavigate;
@@ -45,17 +46,8 @@ class MypageScreen extends ConsumerWidget {
                         children: [
                           ...category1Cards.map((card) => CardItem(
                                 title: card.title,
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => DetailScreen(
-                                        title: card.title,
-                                        initialText: card.description,
-                                      ),
-                                    ),
-                                  );
-                                },
+                                cardId: card.id,
+                                description: card.description,
                               )),
                           if (category1Cards.length < 5)
                             AddCardSkeleton(
@@ -98,17 +90,8 @@ class MypageScreen extends ConsumerWidget {
                         children: [
                           ...category2Cards.map((card) => CardItem(
                                 title: card.title,
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => DetailScreen(
-                                        title: card.title,
-                                        initialText: card.description,
-                                      ),
-                                    ),
-                                  );
-                                },
+                                cardId: card.id,
+                                description: card.description,
                               )),
                           AddCardSkeleton( 
                             title: 'Unimportant',
@@ -136,9 +119,10 @@ class MypageScreen extends ConsumerWidget {
 
 class CardItem extends StatelessWidget {
   final String title;
-  final VoidCallback onTap;
+  final String cardId; // カードIDを追加
+  final String description;
 
-  CardItem({required this.title, required this.onTap});
+  CardItem({required this.title, required this.cardId, required this.description/*, required this.onTap*/});
 
   @override
   Widget build(BuildContext context) {
@@ -150,7 +134,14 @@ class CardItem extends StatelessWidget {
         child: Card(
           elevation: 4.0,
           child: InkWell(
-            onTap: onTap,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => CardMemoScreen(cardId: cardId, title: title, description: description),
+                ),
+              );
+            },
             child: Container(
               padding: EdgeInsets.all(16.0),
               child: Center(

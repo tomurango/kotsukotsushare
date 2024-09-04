@@ -30,7 +30,7 @@ final cardsProvider = StreamProvider.autoDispose<List<CardData>>((ref) {
               id: doc.id,
               title: data['title'] ?? '',
               description: data['description'] ?? '',
-                category: data['category'] ?? '',
+              category: data['category'] ?? '',
             );
           }).toList());
 
