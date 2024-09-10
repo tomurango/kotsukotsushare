@@ -1,57 +1,42 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import '../providers/auth_provider.dart';
+import '../providers/card_memos_provider.dart';
 
-class CardMemoScreen extends HookWidget {
-  final String cardId; // カードIDを受け取る
+class CardMemoScreen extends ConsumerWidget {
+  final String cardId;
   final String title;
   final String description;
 
-  CardMemoScreen({required this.cardId, required this.title, required this.description});
+  CardMemoScreen({
+    required this.cardId,
+    required this.title,
+    required this.description,
+  });
 
   @override
-  Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
-    final memoController = useTextEditingController();
-    // memoの公開フラグをSwitchで管理するためのローカル状態
-    final isPublic = useState(false);
-
-    Stream<List<MemoData>> _getMemos() {
-      return FirebaseFirestore.instance
-          .collection('users')
-          .doc(user!.uid)
-          .collection('cards')
-          .doc(cardId)
-          .collection('memos')
-          .orderBy('createdAt', descending: true) // 新しい順にソート
-          .snapshots()
-          .map((snapshot) => snapshot.docs.map((doc) {
-                final data = doc.data();
-                return MemoData(
-                  id: doc.id,
-                  content: data['content'] ?? '',
-                  createdAt: (data['createdAt'] as Timestamp).toDate(),
-                  isPublic: data['isPublic'] ?? false,
-                );
-              }).toList());
-    }
+  Widget build(BuildContext context, WidgetRef ref) {
+    final memoController = TextEditingController();
+    final isPublic = ref.watch(memoIsPublicProvider); // 公開フラグの状態をRiverpodから取得
+    final user = ref.watch(userProvider); // 現在のユーザーをRiverpodのProviderから取得
+    final memosAsyncValue = ref.watch(memosProvider(cardId)); // メモデータを取得
 
     void _addMemo() async {
-      if (memoController.text.isNotEmpty) {
+      if (user != null && memoController.text.isNotEmpty) {
         await FirebaseFirestore.instance
             .collection('users')
-            .doc(user!.uid)
+            .doc(user.uid) // 現在のユーザーのUIDを使用
             .collection('cards')
             .doc(cardId)
             .collection('memos')
             .add({
           'content': memoController.text,
           'createdAt': Timestamp.now(),
-          'isPublic': isPublic.value,
+          'isPublic': isPublic,
         });
         memoController.clear();
-        isPublic.value = true;
+        ref.read(memoIsPublicProvider.notifier).state = true; // フラグをリセット
       }
     }
 
@@ -64,20 +49,12 @@ class CardMemoScreen extends HookWidget {
           Text(title),
           Text(description),
           Expanded(
-            child: StreamBuilder<List<MemoData>>(
-              stream: _getMemos(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return Center(child: CircularProgressIndicator());
-                }
-                if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            child: memosAsyncValue.when(
+              data: (memos) {
+                if (memos.isEmpty) {
                   return Center(child: Text('No memos yet.'));
                 }
-
-                final memos = snapshot.data!;
-
                 return ListView.builder(
-                  reverse: false,
                   itemCount: memos.length,
                   itemBuilder: (context, index) {
                     final memo = memos[index];
@@ -90,6 +67,8 @@ class CardMemoScreen extends HookWidget {
                   },
                 );
               },
+              loading: () => Center(child: CircularProgressIndicator()),
+              error: (err, stack) => Center(child: Text('Error: $err')),
             ),
           ),
           Padding(
@@ -112,52 +91,38 @@ class CardMemoScreen extends HookWidget {
                 SizedBox(height: 8),
                 Row(
                   children: [
-                    Builder(
-                      builder: (context) {
-                        return IconButton(
-                          icon: Icon(
-                            isPublic.value ? Icons.public : Icons.lock,
-                            color: isPublic.value ? Colors.green : Colors.red,
-                          ),
-                          onPressed: () {
-                            final RenderBox button = context.findRenderObject() as RenderBox;
-                            final RenderBox overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
-                            final Offset position = button.localToGlobal(Offset.zero, ancestor: overlay);
-
-                            showMenu(
-                              context: context,
-                              position: RelativeRect.fromLTRB(
-                                position.dx + button.size.width,
-                                position.dy,
-                                position.dx + button.size.width,
-                                overlay.size.height - position.dy - button.size.height,
+                    IconButton(
+                      icon: Icon(
+                        isPublic ? Icons.public : Icons.lock,
+                        color: isPublic ? Colors.green : Colors.red,
+                      ),
+                      onPressed: () {
+                        showMenu(
+                          context: context,
+                          position: RelativeRect.fill,
+                          items: [
+                            PopupMenuItem(
+                              value: true,
+                              child: ListTile(
+                                leading: Icon(Icons.public),
+                                title: Text('Public'),
                               ),
-                              items: [
-                                PopupMenuItem(
-                                  value: true,
-                                  child: ListTile(
-                                    leading: Icon(Icons.public),
-                                    title: Text('Public'),
-                                  ),
-                                ),
-                                PopupMenuItem(
-                                  value: false,
-                                  child: ListTile(
-                                    leading: Icon(Icons.lock),
-                                    title: Text('Private'),
-                                  ),
-                                ),
-                              ],
-                            ).then((value) {
-                              if (value != null) {
-                                isPublic.value = value;
-                              }
-                            });
-                          },
-                        );
+                            ),
+                            PopupMenuItem(
+                              value: false,
+                              child: ListTile(
+                                leading: Icon(Icons.lock),
+                                title: Text('Private'),
+                              ),
+                            ),
+                          ],
+                        ).then((value) {
+                          if (value != null) {
+                            ref.read(memoIsPublicProvider.notifier).state = value;
+                          }
+                        });
                       },
                     ),
-                    SizedBox(width: 8),
                     Spacer(),
                     ElevatedButton(
                       onPressed: _addMemo,
@@ -175,16 +140,3 @@ class CardMemoScreen extends HookWidget {
   }
 }
 
-class MemoData {
-  final String id;
-  final String content;
-  final DateTime createdAt;
-  final bool isPublic;
-
-  MemoData({
-    required this.id,
-    required this.content,
-    required this.createdAt,
-    required this.isPublic,
-  });
-}

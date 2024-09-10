@@ -2,15 +2,15 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    
+
     // Users collection rules
     match /users/{userId} {
-      
+
       // Allow read access if the request is from the authenticated user
       allow read: if request.auth != null && request.auth.uid == userId;
 
-      // Disallow write access directly by the user
-      allow write: if false;
+      // Allow write access if the request is from the authenticated user
+      allow write: if request.auth != null && request.auth.uid == userId;
 
       // Nested cards collection rules
       match /cards/{cardId} {
@@ -21,14 +21,26 @@ service cloud.firestore {
         // Nested memos collection rules
         match /memos/{memoId} {
 
-          // Allow read access if the memo is public (flag is set to true)
-          allow read: if resource.data.public == true || 
+          // Allow read access if the memo is public or belongs to the user
+          allow read: if resource.data.isPublic == true || 
                          (request.auth != null && request.auth.uid == userId);
 
           // Allow write access if the request is from the authenticated user
           allow write: if request.auth != null && request.auth.uid == userId;
         }
       }
+
+      // Nested reflections collection rules
+      match /reflections/{reflectionId} {
+
+        // Allow read/write access if the request is from the authenticated user
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+
+    // Public memos access
+    match /{path=**}/memos/{memoId} {
+      allow read: if resource.data.isPublic == true;
     }
   }
 }
