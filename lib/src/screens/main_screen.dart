@@ -6,6 +6,7 @@ import 'reflection_screen.dart';
 import 'setting_screen.dart';
 import '../widgets/custom_bottom_app_bar.dart';
 
+
 class MainScreen extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -31,7 +32,6 @@ class MainScreen extends HookConsumerWidget {
         onNavigate: (index) => selectedIndex.value = index,
         selectedIndex: selectedIndex.value,
       ),
-      floatingActionButton: null,
     );
   }
 }

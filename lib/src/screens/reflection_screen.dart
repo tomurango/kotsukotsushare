@@ -1,104 +1,106 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../providers/public_memos_provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../providers/auth_provider.dart';
-import '../providers/reflection_provider.dart';
+import '../providers/public_memos_provider.dart';
 
-class ReflectionScreen extends StatelessWidget {
+class ReflectionScreen extends ConsumerWidget {
   final Function(int) onNavigate;
 
   ReflectionScreen({required this.onNavigate});
 
   @override
-  Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 2, // タブの数
-      child: Scaffold(
-        appBar: AppBar(
-          title: Text('Reflection'),
-          bottom: TabBar(
-            tabs: [
-              Tab(text: 'My Reflections'),
-              Tab(text: 'Others\' Memos'),
-            ],
-          ),
-        ),
-        body: TabBarView(
-          children: [
-            _ReflectionHistoryTab(), // 内省記録を表示するタブ
-            _OthersMemosTab(),       // 公開メモを表示するタブ
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ReflectionHistoryTab extends ConsumerWidget {
-  @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // 現在のユーザーをRiverpodのProviderから取得
+    // 現在のユーザーを取得
     final user = ref.watch(userProvider);
 
     if (user == null) {
-      return Center(child: Text('No user logged in.'));
+      return Scaffold(
+        appBar: AppBar(title: Text('メモ一覧')),
+        body: Center(child: Text('ログインしているユーザーがいません。')),
+      );
     }
 
-    // Reflectionデータを取得
-    final reflectionsAsyncValue = ref.watch(reflectionsProvider(user.uid));
+    // 全ての公開メモを取得
+    final memosAsyncValue = ref.watch(publicMemosProvider);
 
     return Scaffold(
-      body: reflectionsAsyncValue.when(
-        data: (reflections) {
-          if (reflections.isEmpty) {
-            return Center(child: Text('No reflections found.'));
-          }
-          return ListView.builder(
-            itemCount: reflections.length,
-            itemBuilder: (context, index) {
-              final reflection = reflections[index];
-              return ListTile(
-                title: Text(reflection.memoContent), // 元のメモ
-                subtitle: Text(reflection.reflection), // 内省内容
-                trailing: Text(reflection.createdAt.toString()),
-              );
-            },
-          );
-        },
-        loading: () => Center(child: CircularProgressIndicator()),
-        error: (err, stack) => Center(child: Text('Error: $err')),
+      appBar: AppBar(
+        title: Text('メモ一覧'),
       ),
-    );
-  }
-}
-
-
-class _OthersMemosTab extends ConsumerWidget {
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final memoAsyncValue = ref.watch(publicMemosProvider);
-
-    return Scaffold(
-      body: memoAsyncValue.when(
+      body: memosAsyncValue.when(
         data: (memos) {
           if (memos.isEmpty) {
-            return Center(child: Text('No public memos found.'));
+            return Center(child: Text('公開されているメモはありません。'));
           }
           return ListView.builder(
             itemCount: memos.length,
             itemBuilder: (context, index) {
               final memo = memos[index];
-              return ListTile(
-                title: Text(memo.content),
-                subtitle: Text('Anonymous'),
+
+              return Card(
+                margin: EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+                elevation: 4.0,
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+
+                      if (memo.type == 'reflection') ...[
+                        Text(
+                          "何があったか",
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        ),
+                        SizedBox(height: 4),
+                        Text(memo.content),
+                        SizedBox(height: 12), // 適度なスペース
+                        
+                        Text(
+                          "どう感じたか",
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        ),
+                        SizedBox(height: 4),
+                        Text(memo.feeling ?? ''),
+                        SizedBox(height: 12),
+
+                        Text(
+                          "面白い真実は何か",
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        ),
+                        SizedBox(height: 4),
+                        Text(memo.truth ?? ''),
+                        SizedBox(height: 12),
+                      ] else ...[
+                        SizedBox(height: 4),
+                        Text(memo.content),
+                        SizedBox(height: 12),
+                      ],
+
+
+                      // 日付や公開・非公開情報を表示
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            "作成日: ${memo.createdAt}",
+                            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                          ),
+                          Text(
+                            memo.isPublic ? "公開" : "非公開",
+                            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
               );
             },
           );
         },
         loading: () => Center(child: CircularProgressIndicator()),
-        error: (err, stack) => Center(child: Text('Error: $err')),
+        error: (err, stack) => Center(child: Text('エラーが発生しました: $err')),
       ),
     );
   }

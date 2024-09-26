@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../providers/auth_provider.dart';
 import '../providers/card_memos_provider.dart';
+import '../widgets/reflection_bottom_sheet.dart';
+import '../models/memo_data.dart';
 
 class CardMemoScreen extends ConsumerWidget {
   final String cardId;
@@ -17,28 +18,7 @@ class CardMemoScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final memoController = TextEditingController();
-    final isPublic = ref.watch(memoIsPublicProvider); // 公開フラグの状態をRiverpodから取得
-    final user = ref.watch(userProvider); // 現在のユーザーをRiverpodのProviderから取得
     final memosAsyncValue = ref.watch(memosProvider(cardId)); // メモデータを取得
-
-    void _addMemo() async {
-      if (user != null && memoController.text.isNotEmpty) {
-        await FirebaseFirestore.instance
-            .collection('users')
-            .doc(user.uid) // 現在のユーザーのUIDを使用
-            .collection('cards')
-            .doc(cardId)
-            .collection('memos')
-            .add({
-          'content': memoController.text,
-          'createdAt': Timestamp.now(),
-          'isPublic': isPublic,
-        });
-        memoController.clear();
-        ref.read(memoIsPublicProvider.notifier).state = true; // フラグをリセット
-      }
-    }
 
     return Scaffold(
       appBar: AppBar(
@@ -54,16 +34,44 @@ class CardMemoScreen extends ConsumerWidget {
                 if (memos.isEmpty) {
                   return Center(child: Text('No memos yet.'));
                 }
+
+
                 return ListView.builder(
-                  itemCount: memos.length,
+                  itemCount: memos.length * 2 - 1,
                   itemBuilder: (context, index) {
-                    final memo = memos[index];
-                    return ListTile(
-                      title: Text(memo.content),
-                      subtitle: Text(
-                        "${memo.createdAt} - ${memo.isPublic ? 'Public' : 'Private'}",
-                      ),
-                    );
+                    if (index.isOdd) {
+                      return Divider();
+                    }
+                    final memoIndex = index ~/ 2;
+                    final memo = memos[memoIndex];
+
+                    // memo.typeに基づいて表示内容を分ける
+                    if (memo.type == 'reflection') {
+                      // reflectionの場合、feelingとtruthも表示
+                      return ListTile(
+                        title: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text("何があったか: ${memo.content}"), // "内容"
+                            SizedBox(height: 4),
+                            Text("どう感じたか: ${memo.feeling}"), // "どう感じたか"
+                            SizedBox(height: 4),
+                            Text("面白い真実は何か: ${memo.truth}"), // "面白い真実は何か"
+                          ],
+                        ),
+                        subtitle: Text(
+                          "${memo.createdAt} - ${memo.isPublic ? 'Public' : 'Private'}",
+                        ),
+                      );
+                    } else {
+                      // memoの場合、contentのみ表示
+                      return ListTile(
+                        title: Text(memo.content),
+                        subtitle: Text(
+                          "${memo.createdAt} - ${memo.isPublic ? 'Public' : 'Private'}",
+                        ),
+                      );
+                    }
                   },
                 );
               },
@@ -71,72 +79,22 @@ class CardMemoScreen extends ConsumerWidget {
               error: (err, stack) => Center(child: Text('Error: $err')),
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: memoController,
-                        decoration: InputDecoration(
-                          labelText: 'Enter memo',
-                          border: OutlineInputBorder(),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 8),
-                Row(
-                  children: [
-                    IconButton(
-                      icon: Icon(
-                        isPublic ? Icons.public : Icons.lock,
-                        color: isPublic ? Colors.green : Colors.red,
-                      ),
-                      onPressed: () {
-                        showMenu(
-                          context: context,
-                          position: RelativeRect.fill,
-                          items: [
-                            PopupMenuItem(
-                              value: true,
-                              child: ListTile(
-                                leading: Icon(Icons.public),
-                                title: Text('Public'),
-                              ),
-                            ),
-                            PopupMenuItem(
-                              value: false,
-                              child: ListTile(
-                                leading: Icon(Icons.lock),
-                                title: Text('Private'),
-                              ),
-                            ),
-                          ],
-                        ).then((value) {
-                          if (value != null) {
-                            ref.read(memoIsPublicProvider.notifier).state = value;
-                          }
-                        });
-                      },
-                    ),
-                    Spacer(),
-                    ElevatedButton(
-                      onPressed: _addMemo,
-                      child: Text('Add'),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 16),
-              ],
-            ),
-          ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          // FABを押したときにボトムシートを表示
+          showModalBottomSheet(
+            context: context,
+            isScrollControlled: true, // 高さに応じてスクロール可能に
+            builder: (context) {
+              // Fabを押したときに表示するボトムシートは空白のメモデータを渡す
+              return ReflectionBottomSheet(memo: MemoData.empty(), cardId: cardId);
+            },
+          );
+        },
+        child: Icon(Icons.add),
       ),
     );
   }
 }
-
