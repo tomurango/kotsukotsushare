@@ -136,6 +136,7 @@ class _ReflectionBottomSheetState extends ConsumerState<ReflectionBottomSheet> {
                   'type': 'memo',
                   'createdAt': Timestamp.now(),
                   'isPublic': isPublic, // 公開・非公開のフラグ
+                  'userId': FirebaseAuth.instance.currentUser!.uid,
                 });
               } else {
                 // 内省の保存処理
@@ -152,6 +153,7 @@ class _ReflectionBottomSheetState extends ConsumerState<ReflectionBottomSheet> {
                   'type': 'reflection',
                   'createdAt': Timestamp.now(),
                   'isPublic': isPublic, // 公開・非公開のフラグ
+                  'userId': FirebaseAuth.instance.currentUser!.uid,
                 });
               }
 

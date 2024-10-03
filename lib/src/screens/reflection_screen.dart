@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../providers/auth_provider.dart';
 import '../providers/public_memos_provider.dart';
 
@@ -77,7 +78,6 @@ class ReflectionScreen extends ConsumerWidget {
                         SizedBox(height: 12),
                       ],
 
-
                       // 日付や公開・非公開情報を表示
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -89,6 +89,13 @@ class ReflectionScreen extends ConsumerWidget {
                           Text(
                             memo.isPublic ? "公開" : "非公開",
                             style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                          ),
+                          // オプションボタン
+                          IconButton(
+                            icon: Icon(Icons.more_vert),
+                            onPressed: () {
+                              _showOptionsBottomSheet(context, memo.userId, memo.type, memo.content, memo.feeling ?? '', memo.truth ?? '');
+                            },
                           ),
                         ],
                       ),
@@ -102,6 +109,53 @@ class ReflectionScreen extends ConsumerWidget {
         loading: () => Center(child: CircularProgressIndicator()),
         error: (err, stack) => Center(child: Text('エラーが発生しました: $err')),
       ),
+    );
+  }
+}
+
+// ボトムシートを表示する関数
+void _showOptionsBottomSheet(BuildContext context, String memoUserId, String type, String content, String feeling, String truth) {
+  showModalBottomSheet(
+    context: context,
+    builder: (BuildContext context) {
+      return Container(
+        child: Wrap(
+          children: <Widget>[
+            ListTile(
+              leading: Icon(Icons.block),
+              title: Text('ユーザをブロックする'),
+              onTap: () {
+                _blockUser(context, memoUserId, type, content, feeling, truth);
+                Navigator.pop(context); // ボトムシートを閉じる
+              },
+            ),
+          ],
+        ),
+      );
+    },
+  );
+}
+
+// ユーザをブロックする処理
+void _blockUser(BuildContext context, String memoUserId, String type , String content, String feeling, String truth) {
+  final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+
+  // ブロックするユーザーのIDとメモの内容を保存
+  if (currentUserId != null) {
+    FirebaseFirestore.instance
+      .collection('users')
+      .doc(currentUserId)
+      .collection('blockedUsers')
+      .doc(memoUserId)
+      .set({
+        'blockedAt': Timestamp.now(),
+        'type': type,
+        'content': content,
+        'feeling': feeling,
+        'truth': truth,
+      });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('ユーザをブロックしました')),
     );
   }
 }
