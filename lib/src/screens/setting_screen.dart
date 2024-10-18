@@ -14,7 +14,7 @@ class SettingScreen extends StatelessWidget {
         onPressed: () async {
           await FirebaseAuth.instance.signOut();
         },
-        child: Text('Logout'),
+        child: Text('ログアウト'),
       ),
     );
   }

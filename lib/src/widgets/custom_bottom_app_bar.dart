@@ -11,16 +11,16 @@ class CustomBottomAppBar extends StatelessWidget {
     return BottomNavigationBar(
       items: const <BottomNavigationBarItem>[
         BottomNavigationBarItem(
-          icon: Icon(Icons.home),
-          label: 'Home',
+          icon: Icon(Icons.note),
+          label: 'マイメモ',
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.people),
-          label: 'Community',
+          icon: Icon(Icons.group),
+          label: 'みんなの記録',
         ),
         BottomNavigationBarItem(
           icon: Icon(Icons.settings),
-          label: 'Settings',
+          label: '設定',
         ),
       ],
       currentIndex: selectedIndex,

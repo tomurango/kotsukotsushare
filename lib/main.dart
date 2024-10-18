@@ -6,10 +6,9 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'firebase_options.dart';
 import 'src/auth_wrapper.dart';
 
-void main() async{
-
-  // 基本カラーをオレンジ色 (#FF9900) に設定
-  final int primaryColor = 0xffff9900;
+void main() async {
+  // 基本カラーをTeal色 (#008080) に設定
+  final int primaryColor = 0xFF008080;
   final CorePalette corePalette = CorePalette.of(primaryColor);
 
   // CorePaletteからカラーシェーマを生成
@@ -29,10 +28,12 @@ void main() async{
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  runApp(ProviderScope(child: MyApp(
-    lightScheme: lightColorScheme,
-    darkScheme: darkColorScheme,
-  )));
+  runApp(ProviderScope(
+    child: MyApp(
+      lightScheme: lightColorScheme,
+      darkScheme: darkColorScheme,
+    ),
+  ));
 }
 
 class MyApp extends StatelessWidget {
@@ -41,48 +42,32 @@ class MyApp extends StatelessWidget {
 
   const MyApp({super.key, required this.lightScheme, required this.darkScheme});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     final brightness = MediaQuery.of(context).platformBrightness;
 
-    // Use with Google Fonts package to use downloadable fonts
-    TextTheme textTheme = GoogleFonts.robotoTextTheme();
+    // テーマ定義時に直接Googleフォントを適用
+    final ThemeData lightTheme = ThemeData(
+      colorScheme: lightScheme,
+      textTheme: GoogleFonts.zenKakuGothicNewTextTheme(
+        Theme.of(context).textTheme,
+      ),
+      useMaterial3: true,
+    );
 
-    MaterialTheme theme = MaterialTheme(textTheme, lightScheme, darkScheme);
+    final ThemeData darkTheme = ThemeData(
+      colorScheme: darkScheme,
+      textTheme: GoogleFonts.zenKakuGothicNewTextTheme(
+        Theme.of(context).textTheme,
+      ),
+      useMaterial3: true,
+    );
+
     return MaterialApp(
-      title: 'KotsuKotsuShare',
-      theme: theme.light(), // ライトテーマを適用
-      darkTheme: theme.dark(), // ダークテーマを適用
+      title: 'Chokushii',
+      theme: lightTheme, // ライトテーマを適用
+      darkTheme: darkTheme, // ダークテーマを適用
       home: AuthWrapper(),
-    );
-  }
-}
-
-class MaterialTheme {
-  final TextTheme textTheme;
-  final ColorScheme lightColorScheme;
-  final ColorScheme darkColorScheme;
-
-  MaterialTheme(this.textTheme, this.lightColorScheme, this.darkColorScheme);
-
-  ThemeData light() {
-    return ThemeData(
-      colorScheme: lightColorScheme,
-      textTheme: textTheme,
-      // Material Design 3を使用
-      applyElevationOverlayColor: true,
-      useMaterial3: true,
-    );
-  }
-
-  ThemeData dark() {
-    return ThemeData(
-      colorScheme: darkColorScheme,
-      textTheme: textTheme,
-      // Material Design 3を使用
-      applyElevationOverlayColor: true,
-      useMaterial3: true,
     );
   }
 }

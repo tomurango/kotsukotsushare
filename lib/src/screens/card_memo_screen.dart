@@ -4,6 +4,7 @@ import '../providers/auth_provider.dart';
 import '../providers/card_memos_provider.dart';
 import '../widgets/reflection_bottom_sheet.dart';
 import '../models/memo_data.dart';
+import 'package:intl/intl.dart';
 
 class CardMemoScreen extends ConsumerWidget {
   final String cardId;
@@ -20,24 +21,38 @@ class CardMemoScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final memosAsyncValue = ref.watch(memosProvider(cardId)); // メモデータを取得
 
+    // 日付のフォーマットを設定
+    String formatDate(DateTime date) {
+      final DateFormat formatter = DateFormat('yyyy/MM/dd'); // 日付だけを表示する形式
+      return formatter.format(date);
+    }
+
     return Scaffold(
       appBar: AppBar(
-        title: Text('Memos for Card'),
+        title: Text(
+          title,
+          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+        ),
       ),
       body: Column(
         children: [
-          Text(title),
-          Text(description),
+          Padding(
+            padding: const EdgeInsets.all(16.0), // 周囲に16ピクセルのパディングを追加
+            child: Text(
+              description,
+              style: TextStyle(fontSize: 24),
+            ),
+          ),
           Expanded(
             child: memosAsyncValue.when(
               data: (memos) {
                 if (memos.isEmpty) {
-                  return Center(child: Text('No memos yet.'));
+                  return Center(child: Text('メモはありません。'));
                 }
 
 
                 return ListView.builder(
-                  itemCount: memos.length * 2 - 1,
+                  itemCount: memos.length * 2 ,
                   itemBuilder: (context, index) {
                     if (index.isOdd) {
                       return Divider();
@@ -60,7 +75,7 @@ class CardMemoScreen extends ConsumerWidget {
                           ],
                         ),
                         subtitle: Text(
-                          "${memo.createdAt} - ${memo.isPublic ? 'Public' : 'Private'}",
+                          "${formatDate(memo.createdAt)} - ${memo.isPublic ? 'Public' : 'Private'}",
                         ),
                       );
                     } else {
@@ -68,7 +83,7 @@ class CardMemoScreen extends ConsumerWidget {
                       return ListTile(
                         title: Text(memo.content),
                         subtitle: Text(
-                          "${memo.createdAt} - ${memo.isPublic ? 'Public' : 'Private'}",
+                          "${formatDate(memo.createdAt)} - ${memo.isPublic ? 'Public' : 'Private'}",
                         ),
                       );
                     }

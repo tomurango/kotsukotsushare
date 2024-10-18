@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../providers/auth_provider.dart';
 import '../providers/public_memos_provider.dart';
+import 'package:intl/intl.dart';
 
 class ReflectionScreen extends ConsumerWidget {
   final Function(int) onNavigate;
@@ -16,99 +17,77 @@ class ReflectionScreen extends ConsumerWidget {
     final user = ref.watch(userProvider);
 
     if (user == null) {
-      return Scaffold(
-        appBar: AppBar(title: Text('メモ一覧')),
-        body: Center(child: Text('ログインしているユーザーがいません。')),
-      );
+      return Center(child: Text('ログインしているユーザーがいません。'));
     }
 
     // 全ての公開メモを取得
     final memosAsyncValue = ref.watch(publicMemosProvider);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('メモ一覧'),
-      ),
-      body: memosAsyncValue.when(
-        data: (memos) {
-          if (memos.isEmpty) {
-            return Center(child: Text('公開されているメモはありません。'));
-          }
-          return ListView.builder(
-            itemCount: memos.length,
-            itemBuilder: (context, index) {
-              final memo = memos[index];
+    // 日付のフォーマットを設定
+    String formatDate(DateTime date) {
+      final DateFormat formatter = DateFormat('yyyy/MM/dd'); // 日付だけを表示する形式
+      return formatter.format(date);
+    }
 
-              return Card(
-                margin: EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
-                elevation: 4.0,
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
+    return memosAsyncValue.when(
+      data: (memos) {
+        if (memos.isEmpty) {
+          return Center(child: Text('公開されているメモはありません。'));
+        }
 
-                      if (memo.type == 'reflection') ...[
-                        Text(
-                          "何があったか",
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                        ),
-                        SizedBox(height: 4),
-                        Text(memo.content),
-                        SizedBox(height: 12), // 適度なスペース
-                        
-                        Text(
-                          "どう感じたか",
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                        ),
-                        SizedBox(height: 4),
-                        Text(memo.feeling ?? ''),
-                        SizedBox(height: 12),
+        return ListView.builder(
+          itemCount: memos.length * 2 ,
+          itemBuilder: (context, index) {
+            if (index.isOdd) {
+              return Divider();
+            }
+            final memoIndex = index ~/ 2;
+            final memo = memos[memoIndex];
 
-                        Text(
-                          "面白い真実は何か",
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                        ),
-                        SizedBox(height: 4),
-                        Text(memo.truth ?? ''),
-                        SizedBox(height: 12),
-                      ] else ...[
-                        SizedBox(height: 4),
-                        Text(memo.content),
-                        SizedBox(height: 12),
-                      ],
-
-                      // 日付や公開・非公開情報を表示
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            "作成日: ${memo.createdAt}",
-                            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                          ),
-                          Text(
-                            memo.isPublic ? "公開" : "非公開",
-                            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                          ),
-                          // オプションボタン
-                          IconButton(
-                            icon: Icon(Icons.more_vert),
-                            onPressed: () {
-                              _showOptionsBottomSheet(context, memo.userId, memo.type, memo.content, memo.feeling ?? '', memo.truth ?? '');
-                            },
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+            // memo.typeに基づいて表示内容を分ける
+            if (memo.type == 'reflection') {
+              // reflectionの場合、feelingとtruthも表示
+              return ListTile(
+                title: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text("何があったか: ${memo.content}"), // "内容"
+                    SizedBox(height: 4),
+                    Text("どう感じたか: ${memo.feeling}"), // "どう感じたか"
+                    SizedBox(height: 4),
+                    Text("面白い真実は何か: ${memo.truth}"), // "面白い真実は何か"
+                  ],
+                ),
+                subtitle: Text(
+                  "${formatDate(memo.createdAt)}",
+                ),
+                trailing: IconButton(
+                  icon: Icon(Icons.more_vert),
+                  onPressed: () {
+                    _showOptionsBottomSheet(context, memo.userId, memo.type, memo.content, memo.feeling ?? '', memo.truth ?? '');
+                  },
                 ),
               );
-            },
-          );
-        },
-        loading: () => Center(child: CircularProgressIndicator()),
-        error: (err, stack) => Center(child: Text('エラーが発生しました: $err')),
-      ),
+            } else {
+              // memoの場合、contentのみ表示
+              return ListTile(
+                title: Text(memo.content),
+                subtitle: Text(
+                  "${formatDate(memo.createdAt)}",
+                ),
+                trailing: IconButton(
+                  icon: Icon(Icons.more_vert),
+                  onPressed: () {
+                    _showOptionsBottomSheet(context, memo.userId, memo.type, memo.content, memo.feeling ?? '', memo.truth ?? '');
+                  },
+                ),
+              );
+            }
+          },
+        );
+      },
+      loading: () => Center(child: CircularProgressIndicator()),
+      error: (err, stack) => Center(child: Text('エラーが発生しました: $err')),
     );
   }
 }

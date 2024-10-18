@@ -21,11 +21,17 @@ class MainScreen extends HookConsumerWidget {
     ];
 
     // タイトルのリスト
-    final titles = ['Mypage', 'Share', 'Setting'];
+    final titles = ['マイメモ', 'みんなの記録', '設定'];
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(titles[selectedIndex.value]),
+        backgroundColor: Color(0xFF008080), // AppBarの背景色をティール色に設定
+        title: Text(
+          titles[selectedIndex.value],
+          style: TextStyle(
+            color: Colors.white, // 文字色を白に設定
+          ),
+        ),
       ),
       body: pages[selectedIndex.value],
       bottomNavigationBar: CustomBottomAppBar(

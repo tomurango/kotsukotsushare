@@ -36,7 +36,11 @@ class CreateCardScreen extends HookWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Create $title Card'),
+        title: Text(
+          title == 'Important' 
+            ? '大切なことカード作成' 
+            : '大切じゃないことカード作成',
+        ),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -47,20 +51,22 @@ class CreateCardScreen extends HookWidget {
             children: [
               TextFormField(
                 controller: titleController,
-                decoration: InputDecoration(labelText: 'Title'),
+                decoration: InputDecoration(
+                  labelText: title == 'Important' ? '大切なこと' : '大切じゃないこと',
+                ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please enter a title';
+                    return '大切なことを入力してください';
                   }
                   return null;
                 },
               ),
               TextFormField(
                 controller: descriptionController,
-                decoration: InputDecoration(labelText: 'Description'),
+                decoration: InputDecoration(labelText: '説明'),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please enter a description';
+                    return '説明を入力してください';
                   }
                   return null;
                 },
@@ -68,7 +74,7 @@ class CreateCardScreen extends HookWidget {
               SizedBox(height: 20),
               ElevatedButton(
                 onPressed: saveCard,
-                child: Text('Save'),
+                child: Text('作成する'),
               ),
             ],
           ),
