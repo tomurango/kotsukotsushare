@@ -17,7 +17,7 @@ class MainScreen extends HookConsumerWidget {
     final pages = [
       MypageScreen(onNavigate: (index) => selectedIndex.value = index),
       ReflectionScreen(onNavigate: (index) => selectedIndex.value = index),
-      SettingScreen(onNavigate: (index) => selectedIndex.value = index),
+      SettingsScreen(onNavigate: (index) => selectedIndex.value = index),
     ];
 
     // タイトルのリスト
