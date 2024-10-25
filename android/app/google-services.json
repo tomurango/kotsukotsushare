@@ -1,21 +1,21 @@
 {
   "project_info": {
-    "project_number": "348365535897",
-    "project_id": "kotsukotsushare",
-    "storage_bucket": "kotsukotsushare.appspot.com"
+    "project_number": "205923031060",
+    "project_id": "chokushii-1ecc5",
+    "storage_bucket": "chokushii-1ecc5.appspot.com"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:348365535897:android:6176bc7590e860835b5608",
+        "mobilesdk_app_id": "1:205923031060:android:93083707079f278132ef01",
         "android_client_info": {
-          "package_name": "com.tomurango.kotsukotsushare"
+          "package_name": "com.tomurango.chokushii"
         }
       },
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyDmpbOzLrfs9eS4rwc0F4ueadLwAa2RL9g"
+          "current_key": "AIzaSyDjAbduE4io_Bw3T63PD1DuDsmkAUeaTxM"
         }
       ],
       "services": {

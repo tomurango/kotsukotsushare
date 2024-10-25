@@ -1,5 +1,9 @@
 {
   "projects": {
-    "default": "kotsukotsushare"
-  }
+    "default": "kotsukotsushare",
+    "chokushii-production": "chokushii-1ecc5"
+  },
+  "targets": {},
+  "etags": {},
+  "dataconnectEmulatorConfig": {}
 }

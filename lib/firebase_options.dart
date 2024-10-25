@@ -57,19 +57,20 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyDmpbOzLrfs9eS4rwc0F4ueadLwAa2RL9g',
-    appId: '1:348365535897:android:6176bc7590e860835b5608',
-    messagingSenderId: '348365535897',
-    projectId: 'kotsukotsushare',
-    storageBucket: 'kotsukotsushare.appspot.com',
+    apiKey: 'AIzaSyDjAbduE4io_Bw3T63PD1DuDsmkAUeaTxM',
+    appId: '1:205923031060:android:93083707079f278132ef01',
+    messagingSenderId: '205923031060',
+    projectId: 'chokushii-1ecc5',
+    storageBucket: 'chokushii-1ecc5.appspot.com',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyCAaoEtxqTfdGrLp1PnyQYpAYNbpTTznr0',
-    appId: '1:348365535897:ios:e30ef5e3f9d350a95b5608',
-    messagingSenderId: '348365535897',
-    projectId: 'kotsukotsushare',
-    storageBucket: 'kotsukotsushare.appspot.com',
-    iosBundleId: 'com.example.kotsukotsushareApp',
+    apiKey: 'AIzaSyCpJwwbBbdtaGN3i997DE0da2KrtbieGnw',
+    appId: '1:205923031060:ios:e24955005d483bb932ef01',
+    messagingSenderId: '205923031060',
+    projectId: 'chokushii-1ecc5',
+    storageBucket: 'chokushii-1ecc5.appspot.com',
+    iosBundleId: 'com.tomurango.chokushii',
   );
+
 }

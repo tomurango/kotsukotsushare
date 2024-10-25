@@ -3,21 +3,21 @@
 <plist version="1.0">
 <dict>
 	<key>CLIENT_ID</key>
-	<string>348365535897-i5fo2rmido5khr4v3hq9e01t0vp3ilmd.apps.googleusercontent.com</string>
+	<string>205923031060-6kncp5nng03a560diie9afd0vr4e7a8g.apps.googleusercontent.com</string>
 	<key>REVERSED_CLIENT_ID</key>
-	<string>com.googleusercontent.apps.348365535897-i5fo2rmido5khr4v3hq9e01t0vp3ilmd</string>
+	<string>com.googleusercontent.apps.205923031060-6kncp5nng03a560diie9afd0vr4e7a8g</string>
 	<key>API_KEY</key>
-	<string>AIzaSyCAaoEtxqTfdGrLp1PnyQYpAYNbpTTznr0</string>
+	<string>AIzaSyCpJwwbBbdtaGN3i997DE0da2KrtbieGnw</string>
 	<key>GCM_SENDER_ID</key>
-	<string>348365535897</string>
+	<string>205923031060</string>
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.example.kotsukotsushareApp</string>
+	<string>com.tomurango.chokushii</string>
 	<key>PROJECT_ID</key>
-	<string>kotsukotsushare</string>
+	<string>chokushii-1ecc5</string>
 	<key>STORAGE_BUCKET</key>
-	<string>kotsukotsushare.appspot.com</string>
+	<string>chokushii-1ecc5.appspot.com</string>
 	<key>IS_ADS_ENABLED</key>
 	<false></false>
 	<key>IS_ANALYTICS_ENABLED</key>
@@ -29,6 +29,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:348365535897:ios:e30ef5e3f9d350a95b5608</string>
+	<string>1:205923031060:ios:e24955005d483bb932ef01</string>
 </dict>
 </plist>
