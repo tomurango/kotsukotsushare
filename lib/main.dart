@@ -64,6 +64,7 @@ class MyApp extends StatelessWidget {
     );
 
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       title: 'Chokushii',
       theme: lightTheme, // ライトテーマを適用
       darkTheme: darkTheme, // ダークテーマを適用

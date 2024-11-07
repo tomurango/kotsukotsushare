@@ -35,6 +35,14 @@ service cloud.firestore {
       } 
     }
 
+    // reports
+    match /reports/{reportId} {
+      allow write: if request.auth != null;
+      
+      // allowed reading only auth account 
+      allow read: if false;
+    }
+
     // Public memos access
     match /{path=**}/memos/{memoId} {
       allow read: if resource.data.isPublic == true;

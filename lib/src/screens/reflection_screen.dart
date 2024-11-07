@@ -108,6 +108,14 @@ void _showOptionsBottomSheet(BuildContext context, String memoUserId, String typ
                 Navigator.pop(context); // ボトムシートを閉じる
               },
             ),
+            ListTile(
+              leading: Icon(Icons.flag),
+              title: Text('報告する'),
+              onTap: () {
+                Navigator.pop(context); // ボトムシートを閉じる
+                _reportContent(context, memoUserId, type, content, feeling, truth);
+              },
+            ),
           ],
         ),
       );
@@ -137,4 +145,69 @@ void _blockUser(BuildContext context, String memoUserId, String type , String co
       SnackBar(content: Text('ユーザをブロックしました')),
     );
   }
+}
+
+// 報告する処理
+void _reportContent(BuildContext context, String memoUserId, String type, String content, String feeling, String truth) {
+  final TextEditingController reportReasonController = TextEditingController();
+
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: Text("報告内容の確認"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text("この投稿を報告する理由を入力してください。"),
+            SizedBox(height: 8),
+            TextField(
+              controller: reportReasonController,
+              maxLines: 3,
+              decoration: InputDecoration(
+                labelText: '報告理由',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: <Widget>[
+          TextButton(
+            child: Text("キャンセル"),
+            onPressed: () {
+              Navigator.of(context).pop(); // ダイアログを閉じる
+            },
+          ),
+          TextButton(
+            child: Text("報告する"),
+            onPressed: () {
+              final reportReason = reportReasonController.text;
+              
+              // Firebaseに報告データを保存する処理
+              FirebaseFirestore.instance.collection('reports').add({
+                'reportedUserId': memoUserId,
+                'type': type,
+                'content': content,
+                'feeling': feeling,
+                'truth': truth,
+                'reportReason': reportReason, // 入力された報告理由を追加
+                'reportedAt': Timestamp.now(),
+                'reportingUserId': FirebaseAuth.instance.currentUser?.uid ?? 'unknown', // 現在のユーザーID
+              }).then((value) {
+                // ダイアログが閉じる前にスナックバーを表示
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('報告が完了しました。'))
+                );
+                Navigator.of(context).pop(); // ダイアログを閉じる
+              }).catchError((error) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('報告に失敗しました。再度お試しください。'))
+                );
+              });
+            },
+          ),
+        ],
+      );
+    },
+  );
 }
