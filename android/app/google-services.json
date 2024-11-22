@@ -2,7 +2,7 @@
   "project_info": {
     "project_number": "205923031060",
     "project_id": "chokushii-1ecc5",
-    "storage_bucket": "chokushii-1ecc5.appspot.com"
+    "storage_bucket": "chokushii-1ecc5.firebasestorage.app"
   },
   "client": [
     {
@@ -12,7 +12,12 @@
           "package_name": "com.tomurango.chokushii"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "205923031060-61bsrm1n7qq3qat1mg53dt8319h7535c.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyDjAbduE4io_Bw3T63PD1DuDsmkAUeaTxM"
@@ -20,7 +25,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "205923031060-61bsrm1n7qq3qat1mg53dt8319h7535c.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "205923031060-6kncp5nng03a560diie9afd0vr4e7a8g.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.tomurango.chokushii"
+              }
+            }
+          ]
         }
       }
     }

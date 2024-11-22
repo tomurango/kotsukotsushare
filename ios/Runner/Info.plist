@@ -32,6 +32,15 @@
 				<string>com.googleusercontent.apps.205923031060-6kncp5nng03a560diie9afd0vr4e7a8g</string>
 			</array>
 		</dict>
+		<!-- Appleログイン用のURLスキーム -->
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>None</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+			</array>
+		</dict>
 	</array>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
@@ -56,5 +65,8 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<!-- Appleログインを有効化 -->
+	<key>ASAuthorizationAppleID</key>
+	<true/>
 </dict>
 </plist>

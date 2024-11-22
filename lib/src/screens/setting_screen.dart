@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class SettingsScreen extends ConsumerWidget {
   final Function(int) onNavigate;
@@ -38,6 +39,17 @@ class SettingsScreen extends ConsumerWidget {
             }
           },
         ),
+        Divider(),
+        // アカウント削除
+        ListTile(
+          leading: Icon(Icons.delete),
+          title: Text('アカウント削除'),
+          subtitle: Text('アカウントを削除します'),
+          onTap: () {
+            _deleteAccount(context);
+          },
+        ),
+        Divider(),
       ],
     );
   }
@@ -68,5 +80,55 @@ class SettingsScreen extends ConsumerWidget {
         );
       },
     );
+  }
+
+  Future<void> _deleteAccount(BuildContext context) async {
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("ログインされていません。")));
+      return;
+    }
+
+    // 確認ダイアログを表示
+    bool confirmDelete = await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text("アカウント削除の確認"),
+          content: Text("アカウントを削除すると復元できません。本当に削除しますか？"),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: Text("キャンセル"),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: Text("削除"),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (!confirmDelete) return;
+
+    // Firestoreのデータを削除
+    try {
+      await FirebaseFirestore.instance.collection('users').doc(user.uid).delete();
+      // 他にユーザー関連のコレクションやドキュメントがある場合は同様に削除
+
+      // Firebase Authenticationのアカウント削除
+      await user.delete();
+
+      // 削除完了メッセージを表示
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("アカウントが削除されました。")));
+      
+      // ログアウト処理など
+      await FirebaseAuth.instance.signOut();
+      
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("アカウント削除に失敗しました: $e")));
+    }
   }
 }
