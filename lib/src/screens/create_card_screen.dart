@@ -5,79 +5,92 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 class CreateCardScreen extends HookWidget {
   final String title;
-  final String category; // カテゴリーを渡すためのプロパティ
+  final String category;
+
   CreateCardScreen({required this.title, required this.category});
 
   @override
   Widget build(BuildContext context) {
-    final titleController = useTextEditingController();
-    final descriptionController = useTextEditingController();
-    final formKey = GlobalKey<FormState>();
+    final titleController = TextEditingController();
+    final descriptionController = TextEditingController();
 
     void saveCard() async {
       final user = FirebaseAuth.instance.currentUser;
 
-      if (user != null && formKey.currentState!.validate()) {
-        await FirebaseFirestore.instance
-            .collection('users')
-            .doc(user.uid)
-            .collection('cards')
-            .add({
-          'title': titleController.text,
-          'description': descriptionController.text,
-          'category': category,
-          'createdAt': Timestamp.now(),
-        });
+      // バリデーション
+      if (titleController.text.isEmpty || descriptionController.text.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('すべてのフィールドを入力してください。')),
+        );
+        return;
+      }
 
-        // 保存後に前の画面に戻る
-        Navigator.of(context).pop();
+      if (user != null) {
+        try {
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(user.uid)
+              .collection('cards')
+              .add({
+            'title': titleController.text,
+            'description': descriptionController.text,
+            'category': category,
+            'createdAt': Timestamp.now(),
+          });
+
+          titleController.clear();
+          descriptionController.clear();
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('カードを作成しました！')),
+          );
+
+          Navigator.of(context).pop();
+        } catch (e) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('エラーが発生しました: $e')),
+          );
+        }
       }
     }
 
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          title == 'Important' 
-            ? '大切なことカード作成' 
-            : '大切じゃないことカード作成',
+          title == 'Important'
+              ? '大切なことカード作成'
+              : '大切じゃないことカード作成',
         ),
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              TextFormField(
-                controller: titleController,
-                decoration: InputDecoration(
-                  labelText: title == 'Important' ? '大切なこと' : '大切じゃないこと',
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return '大切なことを入力してください';
-                  }
-                  return null;
-                },
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title == 'Important'
+                  ? 'ここに大切なことを記録しましょう。'
+                  : 'ここに大切じゃないことを記録しましょう。',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 16),
+            TextField(
+              controller: titleController,
+              decoration: InputDecoration(
+                labelText: title == 'Important' ? '大切なこと' : '大切じゃないこと',
               ),
-              TextFormField(
-                controller: descriptionController,
-                decoration: InputDecoration(labelText: '説明'),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return '説明を入力してください';
-                  }
-                  return null;
-                },
-              ),
-              SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: saveCard,
-                child: Text('作成する'),
-              ),
-            ],
-          ),
+            ),
+            SizedBox(height: 16),
+            TextField(
+              controller: descriptionController,
+              decoration: InputDecoration(labelText: '説明'),
+            ),
+            SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: saveCard,
+              child: Text('作成する'),
+            ),
+          ],
         ),
       ),
     );
