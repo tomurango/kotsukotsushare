@@ -26,6 +26,9 @@ class _ReflectionBottomSheetState extends ConsumerState<ReflectionBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
+    // キーボードが表示されているかを確認
+    final isKeyboardVisible = MediaQuery.of(context).viewInsets.bottom > 0;
+
     // Riverpodで管理されているisPublicの状態を監視
     final isPublic = ref.watch(isPublicProvider);
 
@@ -162,6 +165,10 @@ class _ReflectionBottomSheetState extends ConsumerState<ReflectionBottomSheet> {
             },
             child: Text('保存'),
           ),
+
+          // キーボード表示時に追加する余白
+          if (isKeyboardVisible)
+            SizedBox(height: MediaQuery.of(context).viewInsets.bottom),
         ],
       ),
     );
