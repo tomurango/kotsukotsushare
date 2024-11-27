@@ -11,8 +11,8 @@ class CreateCardScreen extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
-    final titleController = TextEditingController();
-    final descriptionController = TextEditingController();
+    final titleController = useTextEditingController();
+    final descriptionController = useTextEditingController();
 
     void saveCard() async {
       final user = FirebaseAuth.instance.currentUser;
