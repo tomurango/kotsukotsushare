@@ -1,5 +1,5 @@
-name: kotsukotsushare_app
-description: "A new Flutter project."
+name: chokushii
+description: "A self-reflection app to track and improve habits."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -81,6 +81,7 @@ flutter:
   # To add assets to your application, add an assets section, like this:
   assets:
     - assets/images/chokushii_logo_1024.png
+    - assets/images/DSC_0021.JPG
   #   - images/a_dot_burr.jpeg
   #   - images/a_dot_ham.jpeg
 
