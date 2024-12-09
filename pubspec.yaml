@@ -82,6 +82,9 @@ flutter:
   assets:
     - assets/images/chokushii_logo_1024.png
     - assets/images/DSC_0021.JPG
+    - assets/images/how_to_use/create_cards_after.png
+    - assets/images/how_to_use/write_memos_after.png
+    - assets/images/how_to_use/others_log.png
   #   - images/a_dot_burr.jpeg
   #   - images/a_dot_ham.jpeg
 

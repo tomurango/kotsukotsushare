@@ -3,6 +3,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+import '../providers/user_data_provider.dart';
+import 'how_to_use_screen.dart';
+
 // ページごとにオーバーレイの状態を管理する StateProvider
 final overlayVisibilityProviderFamily = StateProvider.family<bool, int>((ref, pageIndex) => false);
 
@@ -19,6 +22,9 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // ユーザーデータを取得
+    final userDataAsync = ref.watch(userDataProvider);
+
     final tutorialPages = [
       _TutorialPage(
         imagePath: 'assets/images/DSC_0021.JPG',
@@ -41,110 +47,123 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
       _TutorialPage(
         imagePath: 'assets/images/DSC_0021.JPG',
         title: 'みんなの価値観や\n知識を知る',
-        description: '他のユーザーがどのように考え、大切にしていることを知り、自分の考えを見直してみましょう。\n\n視点を広げ、新たなアイデアや気付きが得られることは、日常のコミュニケーションや成長にも役立ちます。\n\n現在、さらに使いやすくするための改善や新機能の開発を進めております。ぜひご期待ください！',
+        description: '考えてもわからない時は、周りの人を頼ることも重要です。\n\n他のユーザーの考えや価値観に触れることで、それまでは気づけなかった自分を発見できるかもしれません。\n\n視点を広げ、新たなアイデアや気付きを得られることは、日常のコミュニケーションや成長に大きく役立つでしょう。',
         pageIndex: 3,
       ),
     ];
 
     return Scaffold(
-      body: Stack(
-        children: [
-          PageView.builder(
-            controller: _pageController,
-            itemCount: tutorialPages.length, // ページ数
-            onPageChanged: (index) {
-              // 現在のページ状態を初期化
-              ref.read(overlayVisibilityProviderFamily(_currentPage).notifier).state = false;
-              setState(() {
-                _currentPage = index; // 現在のページを更新
-              });
-            },
-            itemBuilder: (context, index) {
-              return tutorialPages[index];
-            },
-          ),
-          Positioned(
-            bottom: 50,
-            left: 25,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(
-                tutorialPages.length,
-                (index) => Consumer(
-                  builder: (context, ref, child) {
-                    final isOverlayVisible = ref.watch(overlayVisibilityProviderFamily(index));
-                    return _buildPageIndicator(index, isOverlayVisible);
-                  },
+      body: userDataAsync.when(
+        data: (userData) {
+        final tutorialCompleted = userData?['tutorialCompleted'] ?? false;
+
+        return Stack(
+          children: [
+            PageView.builder(
+              controller: _pageController,
+              itemCount: tutorialPages.length, // ページ数
+              onPageChanged: (index) {
+                // 現在のページ状態を初期化
+                ref.read(overlayVisibilityProviderFamily(_currentPage).notifier).state = false;
+                setState(() {
+                  _currentPage = index; // 現在のページを更新
+                });
+              },
+              itemBuilder: (context, index) {
+                return tutorialPages[index];
+              },
+            ),
+            Positioned(
+              bottom: 50,
+              left: 25,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(
+                  tutorialPages.length,
+                  (index) => Consumer(
+                    builder: (context, ref, child) {
+                      final isOverlayVisible = ref.watch(overlayVisibilityProviderFamily(index));
+                      return _buildPageIndicator(index, isOverlayVisible);
+                    },
+                  ),
                 ),
               ),
             ),
-          ),
-          // ボタン (次へ or 終了)
-          Positioned(
-            bottom: 30,
-            right: 20,
-            child: _currentPage == tutorialPages.length - 1
-                ? TextButton(
-                    onPressed: () async {
-                      final user = FirebaseAuth.instance.currentUser;
-                      if (user != null) {
-                        // チュートリアル完了フラグを更新
-                        final userDoc = FirebaseFirestore.instance
-                            .collection('users')
-                            .doc(user.uid);
-                        await userDoc.update({'tutorialCompleted': true});
-                      }
-                      Navigator.of(context).pop(); // スクリーンを閉じる
-                    },
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min, // 子ウィジェットの幅に合わせる
-                      children: [
-                        Icon(
-                          Icons.play_arrow, // アイコンを追加
-                          color: Colors.white,
-                          size: 18.0, // アイコンの大きさを調整
+            // ボタン (次へ or 終了)
+            Positioned(
+              bottom: 30,
+              right: 20,
+              child: _currentPage == tutorialPages.length - 1
+                  ? TextButton(
+                        onPressed: tutorialCompleted
+                            ? () {
+                                Navigator.of(context).pop(); // 画面を閉じる
+                              }
+                            : () async {
+                                final user = FirebaseAuth.instance.currentUser;
+                                if (user != null) {
+                                  // チュートリアル完了フラグを更新
+                                  final userDoc = FirebaseFirestore.instance
+                                      .collection('users')
+                                      .doc(user.uid);
+                                  await userDoc.update({'tutorialCompleted': true});
+                                }
+                                _showUsageGuideDialog(context);
+                              },
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min, // 子ウィジェットの幅に合わせる
+                          children: [
+                            Icon(
+                              Icons.play_arrow, // アイコンを追加
+                              color: Colors.white,
+                              size: 18.0, // アイコンの大きさを調整
+                            ),
+                            const SizedBox(width: 4), // アイコンとテキストの間にスペースを追加
+                            Text(
+                              'チュートリアル終了',
+                              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                color: Colors.white, // 色を白に指定
+                                fontSize: 18, // 必要ならフォントサイズを変更
+                                fontWeight: FontWeight.bold, // 太字に設定
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 4), // アイコンとテキストの間にスペースを追加
-                        Text(
-                          'チュートリアル終了',
-                          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                            color: Colors.white, // 色を白に指定
-                            fontSize: 18, // 必要ならフォントサイズを変更
-                            fontWeight: FontWeight.bold, // 太字に設定
+                      )
+                  
+                  : TextButton(
+                      onPressed: () {
+                        _pageController.nextPage(
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeInOut,
+                        );
+                      },
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min, // 子ウィジェットの幅に合わせる
+                        children: [
+                          Icon(
+                            Icons.play_arrow, // アイコンを追加
+                            color: Colors.white,
+                            size: 18.0, // アイコンの大きさを調整
                           ),
-                        ),
-                      ],
-                    ),
-                  )
-                : TextButton(
-                    onPressed: () {
-                      _pageController.nextPage(
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeInOut,
-                      );
-                    },
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min, // 子ウィジェットの幅に合わせる
-                      children: [
-                        Icon(
-                          Icons.play_arrow, // アイコンを追加
-                          color: Colors.white,
-                          size: 18.0, // アイコンの大きさを調整
-                        ),
-                        const SizedBox(width: 4), // アイコンとテキストの間にスペースを追加
-                        Text(
+                          const SizedBox(width: 4), // アイコンとテキストの間にスペースを追加
+                          Text(
                             '次へ',
                             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                                 fontSize: 18, // 必要ならフォントサイズを変更
                                 fontWeight: FontWeight.bold, // 太字に設定
                                 color: Colors.white, // テキストの色を指定
                             ),
-                        ),
-                      ],
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-          ),
-        ],
+              ),
+            ],
+          );
+        },
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, stackTrace) => Center(child: Text('エラーが発生しました: $error')),
       ),
     );
   }
@@ -161,6 +180,37 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
             : (_currentPage == index ? Colors.white : Colors.grey),
         borderRadius: BorderRadius.circular(4.0),
       ),
+    );
+  }
+
+  void _showUsageGuideDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('使い方ガイドを表示しますか？'),
+          content: Text('チュートリアルが完了しました。\n続けてアプリの使い方ガイドを表示しますか？'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // ダイアログを閉じる
+                Navigator.of(context).pop(); // チュートリアル画面を閉じる
+              },
+              child: Text('いいえ'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // ダイアログを閉じる
+                Navigator.of(context).pop(); // チュートリアル画面を閉じる
+                Navigator.of(context).push(MaterialPageRoute(
+                  builder: (context) => HowToUseScreen(), // 使い方ガイド画面に遷移
+                ));
+              },
+              child: Text('はい'),
+            ),
+          ],
+        );
+      },
     );
   }
 }
@@ -245,10 +295,10 @@ class _TutorialPage extends StatelessWidget {
                   color: Colors.black.withOpacity(0.8),
                   child: Padding(
                     padding: EdgeInsets.fromLTRB(
-                        16.0,	
-                        MediaQuery.of(context).size.height * 0.1, // 画面高さの20%を余白として設定	
-                        16.0,	
-                        16.0,	
+                      16.0,	
+                      MediaQuery.of(context).size.height * 0.1, // 画面高さの20%を余白として設定	
+                      16.0,	
+                      16.0,	
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,

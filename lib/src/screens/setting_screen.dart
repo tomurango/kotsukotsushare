@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'tutorial_screen.dart';
+import 'how_to_use_screen.dart';
 
 class SettingsScreen extends ConsumerWidget {
   final Function(int) onNavigate;
@@ -59,6 +60,20 @@ class SettingsScreen extends ConsumerWidget {
             Navigator.of(context).push(
               MaterialPageRoute(
                 builder: (context) => const TutorialScreen(),
+              ),
+            );
+          },
+        ),
+        Divider(),
+        // アプリの使い方
+        ListTile(
+          leading: Icon(Icons.help),
+          title: Text('アプリの使い方'),
+          subtitle: Text('アプリの使い方を確認します'),
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => const HowToUseScreen(),
               ),
             );
           },
