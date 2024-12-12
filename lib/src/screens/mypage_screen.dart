@@ -33,7 +33,11 @@ class MypageScreen extends ConsumerWidget {
                 children: [
                   Text(
                     '大切なこと',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
                   ),
                   SizedBox(height: 8),
                   cardsAsyncValue.when(
@@ -77,7 +81,10 @@ class MypageScreen extends ConsumerWidget {
                 children: [
                   Text(
                     '大切ではないこと',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontSize: 20, fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.onBackground, // テーマに基づいた色
+                    ),
                   ),
                   SizedBox(height: 8),
                   cardsAsyncValue.when(
@@ -147,7 +154,11 @@ class CardItem extends StatelessWidget {
               child: Center(
                 child: Text(
                   title,
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.onBackground, // テーマに基づいた色
+                  ),
                 ),
               ),
             ),

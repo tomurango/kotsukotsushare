@@ -76,7 +76,7 @@ class _HowToUseScreenState extends State<HowToUseScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: List.generate(
                     tutorialPages.length,
-                    (index) => _buildPageIndicator(index, currentPage),
+                    (index) => _buildPageIndicator(context, index, currentPage),
                   ),
                 );
               },
@@ -100,14 +100,14 @@ class _HowToUseScreenState extends State<HowToUseScreen> {
                           children: [
                             Icon(
                               Icons.play_arrow, // アイコンを追加
-                              color: Colors.black,
+                              color: Theme.of(context).colorScheme.onBackground, // テーマに基づいた色
                               size: 18.0, // アイコンの大きさを調整
                             ),
                             const SizedBox(width: 4), // アイコンとテキストの間にスペースを追加
                             Text(
                               'チュートリアル終了',
                               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                color: Colors.black, // 色を白に指定
+                                color: Theme.of(context).colorScheme.onBackground, // テーマに基づいた色
                                 fontSize: 18, // 必要ならフォントサイズを変更
                                 fontWeight: FontWeight.bold, // 太字に設定
                               ),
@@ -127,16 +127,16 @@ class _HowToUseScreenState extends State<HowToUseScreen> {
                           children: [
                             Icon(
                               Icons.play_arrow, // アイコンを追加
-                              color: Colors.black,
+                              color: Theme.of(context).colorScheme.onBackground, // テーマに基づいた色
                               size: 18.0, // アイコンの大きさを調整
                             ),
                             const SizedBox(width: 4), // アイコンとテキストの間にスペースを追加
                             Text(
                                 '次へ',
                                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                    fontSize: 18, // 必要ならフォントサイズを変更
-                                    fontWeight: FontWeight.bold, // 太字に設定
-                                    color: Colors.black, // テキストの色を指定
+                                  fontSize: 18, // 必要ならフォントサイズを変更
+                                  fontWeight: FontWeight.bold, // 太字に設定
+                                  color: Theme.of(context).colorScheme.onBackground, // テーマに基づいた色
                                 ),
                             ),
                           ],
@@ -150,6 +150,7 @@ class _HowToUseScreenState extends State<HowToUseScreen> {
     );
   }
 
+  /*
   Widget _buildPageIndicator(int index, int currentPage) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 4.0),
@@ -161,6 +162,21 @@ class _HowToUseScreenState extends State<HowToUseScreen> {
       ),
     );
   }
+  */
+  Widget _buildPageIndicator(BuildContext context, int index, int currentPage) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 4.0),
+      width: currentPage == index ? 12.0 : 8.0,
+      height: 8.0,
+      decoration: BoxDecoration(
+        color: currentPage == index
+            ? Theme.of(context).colorScheme.primary // 現在のテーマに基づく色
+            : Theme.of(context).colorScheme.onSurface.withOpacity(0.5), // 補助的な色
+        borderRadius: BorderRadius.circular(4.0),
+      ),
+    );
+  }
+
 }
 
 class _HowToUsePage extends StatelessWidget {
@@ -179,6 +195,8 @@ class _HowToUsePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Padding(
       padding: const EdgeInsets.only(
         left: 0.0, // 左の余白
@@ -203,7 +221,7 @@ class _HowToUsePage extends StatelessWidget {
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                 fontSize: 32, // 大きめのフォントサイズ
                 fontWeight: FontWeight.bold,
-                color: Colors.black, // 黒文字
+                color: theme.colorScheme.onBackground, // テーマに基づいた色
               ),
             ),
           ),
@@ -252,9 +270,9 @@ class _HowToUsePage extends StatelessWidget {
                           ),
                           child: Text(
                             description,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 20,
-                              color: Colors.black, // 黒文字
+                              color: theme.colorScheme.onBackground,
                               height: 1.5, // 行間を少し広げて読みやすく
                             ),
                           ),
@@ -273,9 +291,9 @@ class _HowToUsePage extends StatelessWidget {
                           ),
                           child: Text(
                             description,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 16,
-                              color: Colors.black, // 黒文字
+                              color: theme.colorScheme.onBackground,
                               height: 1.5, // 行間を少し広げて読みやすく
                             ),
                           ),

@@ -31,7 +31,11 @@ class CardMemoScreen extends ConsumerWidget {
       appBar: AppBar(
         title: Text(
           title,
-          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).colorScheme.onBackground, // テーマに基づいた色
+          ),
         ),
       ),
       body: Column(
@@ -40,7 +44,10 @@ class CardMemoScreen extends ConsumerWidget {
             padding: const EdgeInsets.all(16.0), // 周囲に16ピクセルのパディングを追加
             child: Text(
               description,
-              style: TextStyle(fontSize: 24),
+              style: TextStyle(
+                fontSize: 24,
+                color: Theme.of(context).colorScheme.onBackground, // テーマに基づいた色
+              ),
             ),
           ),
           Expanded(
