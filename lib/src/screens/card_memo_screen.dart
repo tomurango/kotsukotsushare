@@ -5,6 +5,9 @@ import '../providers/card_memos_provider.dart';
 import '../widgets/reflection_bottom_sheet.dart';
 import '../models/memo_data.dart';
 import 'package:intl/intl.dart';
+import 'edit_card_screen.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class CardMemoScreen extends ConsumerWidget {
   final String cardId;
@@ -37,6 +40,79 @@ class CardMemoScreen extends ConsumerWidget {
             color: Theme.of(context).colorScheme.onBackground, // テーマに基づいた色
           ),
         ),
+        actions: [
+          // 編集ボタン
+          IconButton(
+            icon: Icon(Icons.edit),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => EditCardScreen(
+                    cardId: cardId,
+                    initialTitle: title,
+                    initialDescription: description,
+                  ),
+                ),
+              );
+            },
+            tooltip: '編集する',
+          ),
+          // 削除ボタン
+          IconButton(
+            icon: Icon(Icons.delete),
+            onPressed: () async {
+              // 削除確認ダイアログを表示
+              final shouldDelete = await showDialog<bool>(
+                context: context,
+                builder: (BuildContext context) {
+                  return AlertDialog(
+                    title: Text('カードの削除'),
+                    content: Text(
+                      'このカードを削除すると、カードに追加されたメモもすべて削除されます。\n本当に削除してもよろしいですか？',
+                      style: TextStyle(fontSize: 16),
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pop(false), // キャンセル
+                        child: Text('キャンセル'),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pop(true), // 削除を確定
+                        child: Text('削除', style: TextStyle(color: Colors.redAccent)),
+                      ),
+                    ],
+                  );
+                },
+              );
+
+              // ユーザーが削除を確定した場合
+              if (shouldDelete == true) {
+                try {
+                  await FirebaseFirestore.instance
+                      .collection('users')
+                      .doc(FirebaseAuth.instance.currentUser?.uid)
+                      .collection('cards')
+                      .doc(cardId)
+                      .delete();
+
+                  // 成功したら画面を閉じる
+                  Navigator.of(context).pop();
+
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('カードを削除しました')),
+                  );
+                } catch (e) {
+                  // エラーハンドリング
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('削除に失敗しました: $e')),
+                  );
+                }
+              }
+            },
+            tooltip: '削除する',
+          ),
+        ],
       ),
       body: Column(
         children: [
