@@ -18,6 +18,7 @@ final memosProvider = StreamProvider.family<List<MemoData>, String>((ref, cardId
       .map((snapshot) => snapshot.docs.map((doc) {
             final data = doc.data();
             return MemoData(
+              cardId: cardId,
               id: doc.id,
               content: data['content'] ?? '',
               createdAt: (data['createdAt'] as Timestamp).toDate(),

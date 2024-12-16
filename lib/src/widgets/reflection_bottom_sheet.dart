@@ -15,22 +15,33 @@ class ReflectionBottomSheet extends ConsumerStatefulWidget {
   _ReflectionBottomSheetState createState() => _ReflectionBottomSheetState();
 }
 
+
 class _ReflectionBottomSheetState extends ConsumerState<ReflectionBottomSheet> {
-  // モード切り替え用のインデックス（0がメモ、1が内省）
   int selectedSegment = 0;
 
-  // テキストフィールド用のコントローラ
   final contentController = TextEditingController();
   final feelingController = TextEditingController();
   final truthController = TextEditingController();
 
   @override
-  Widget build(BuildContext context) {
-    // キーボードが表示されているかを確認
-    final isKeyboardVisible = MediaQuery.of(context).viewInsets.bottom > 0;
+  void initState() {
+    super.initState();
 
-    // Riverpodで管理されているisPublicの状態を監視
+    // 初期データをセット
+    contentController.text = widget.memo.content;
+    if (widget.memo.type == 'reflection') {
+      feelingController.text = widget.memo.feeling ?? '';
+      truthController.text = widget.memo.truth ?? '';
+      selectedSegment = 1; // reflectionモードにセット
+    } else {
+      selectedSegment = 0; // memoモードにセット
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final isPublic = ref.watch(isPublicProvider);
+    final isKeyboardVisible = MediaQuery.of(context).viewInsets.bottom > 0;
 
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -38,7 +49,6 @@ class _ReflectionBottomSheetState extends ConsumerState<ReflectionBottomSheet> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ToggleButtonsでメモと内省を切り替え
           ToggleButtons(
             isSelected: [selectedSegment == 0, selectedSegment == 1],
             onPressed: (int index) {
@@ -58,10 +68,7 @@ class _ReflectionBottomSheetState extends ConsumerState<ReflectionBottomSheet> {
             ],
           ),
           SizedBox(height: 16),
-
-          // 選択されたセグメントに応じてフォームを表示
           if (selectedSegment == 0) ...[
-            // メモ用のフォーム
             TextField(
               controller: contentController,
               decoration: InputDecoration(
@@ -70,16 +77,14 @@ class _ReflectionBottomSheetState extends ConsumerState<ReflectionBottomSheet> {
               ),
             ),
           ] else ...[
-            // 内省用のフォーム
             TextField(
-              controller: contentController, // 内省の内容もcontentフィールドに保存
+              controller: contentController,
               decoration: InputDecoration(
                 labelText: '内省の内容 (何があったか)',
                 border: OutlineInputBorder(),
               ),
             ),
             SizedBox(height: 16),
-
             TextField(
               controller: feelingController,
               decoration: InputDecoration(
@@ -88,7 +93,6 @@ class _ReflectionBottomSheetState extends ConsumerState<ReflectionBottomSheet> {
               ),
             ),
             SizedBox(height: 16),
-
             TextField(
               controller: truthController,
               decoration: InputDecoration(
@@ -98,8 +102,6 @@ class _ReflectionBottomSheetState extends ConsumerState<ReflectionBottomSheet> {
             ),
           ],
           SizedBox(height: 16),
-
-          // 公開・非公開の切り替えスイッチ
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -122,51 +124,53 @@ class _ReflectionBottomSheetState extends ConsumerState<ReflectionBottomSheet> {
           ),
           SizedBox(height: 16),
 
-          // 保存ボタン
           ElevatedButton(
-            onPressed: () {
-              // 選択されたセグメントに応じてデータを保存
-              if (selectedSegment == 0) {
-                // メモの保存処理
-                FirebaseFirestore.instance
-                    .collection('users')
-                    .doc(FirebaseAuth.instance.currentUser!.uid)
-                    .collection('cards')
-                    .doc(widget.cardId)
-                    .collection('memos')
-                    .add({
-                  'content': contentController.text, // メモと内省共通でcontentを使用
-                  'type': 'memo',
-                  'createdAt': Timestamp.now(),
-                  'isPublic': isPublic, // 公開・非公開のフラグ
-                  'userId': FirebaseAuth.instance.currentUser!.uid,
-                });
-              } else {
-                // 内省の保存処理
-                FirebaseFirestore.instance
-                    .collection('users')
-                    .doc(FirebaseAuth.instance.currentUser!.uid)
-                    .collection('cards')
-                    .doc(widget.cardId)
-                    .collection('memos')
-                    .add({
-                  'content': contentController.text, // 内省の内容もcontentに保存
-                  'feeling': feelingController.text,  // どう感じたか
-                  'truth': truthController.text,      // 面白い真実は何か
-                  'type': 'reflection',
-                  'createdAt': Timestamp.now(),
-                  'isPublic': isPublic, // 公開・非公開のフラグ
-                  'userId': FirebaseAuth.instance.currentUser!.uid,
-                });
-              }
+            onPressed: () async {
+              final user = FirebaseAuth.instance.currentUser;
 
-              // ボトムシートを閉じる
-              Navigator.pop(context);
+              if (user != null) {
+                final memosCollection = FirebaseFirestore.instance
+                    .collection('users')
+                    .doc(user.uid)
+                    .collection('cards')
+                    .doc(widget.cardId)
+                    .collection('memos');
+
+                // 上書きデータを構築
+                final updatedData = {
+                  'content': contentController.text,
+                  'isPublic': isPublic,
+                  'type': selectedSegment == 0 ? 'memo' : 'reflection',
+                  'updatedAt': Timestamp.now(),
+                };
+
+                if (selectedSegment == 1) {
+                  updatedData['feeling'] = feelingController.text;
+                  updatedData['truth'] = truthController.text;
+                }
+
+                try {
+                  if (widget.memo.id.isNotEmpty) {
+                    // 上書き更新: idが存在する場合
+                    await memosCollection.doc(widget.memo.id).update(updatedData);
+                    print('メモを上書きしました');
+                  } else {
+                    // 新規作成: idが空の場合
+                    updatedData['createdAt'] = Timestamp.now();
+                    updatedData['userId'] = user.uid;
+                    await memosCollection.add(updatedData);
+                    print('新規メモを作成しました');
+                  }
+
+                  Navigator.pop(context); // ボトムシートを閉じる
+                } catch (e) {
+                  print('エラーが発生しました: $e');
+                }
+              }
             },
             child: Text('保存'),
           ),
 
-          // キーボード表示時に追加する余白
           if (isKeyboardVisible)
             SizedBox(height: MediaQuery.of(context).viewInsets.bottom),
         ],

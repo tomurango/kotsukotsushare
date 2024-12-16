@@ -1,5 +1,6 @@
 // メモデータのモデル
 class MemoData {
+  final String cardId;
   final String id;
   final String content;
   final DateTime createdAt;
@@ -9,6 +10,7 @@ class MemoData {
   final String truth;
   
   MemoData({
+    required this.cardId,
     required this.id,
     required this.content,
     required this.createdAt,
@@ -19,15 +21,16 @@ class MemoData {
   });
 
   // 空のデータを生成するファクトリメソッド
-    factory MemoData.empty() {
-        return MemoData(
-        id: '',
-        content: '',
-        createdAt: DateTime.now(),
-        isPublic: true,
-        type: '',
-        feeling: '',
-        truth: '',
-        );
-    }
+  factory MemoData.empty() {
+    return MemoData(
+    cardId: '',
+    id: '',
+    content: '',
+    createdAt: DateTime.now(),
+    isPublic: true,
+    type: '',
+    feeling: '',
+    truth: '',
+    );
+  }
 }
