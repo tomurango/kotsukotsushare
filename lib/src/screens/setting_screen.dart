@@ -50,6 +50,7 @@ class SettingsScreen extends ConsumerWidget {
             _deleteAccount(context);
           },
         ),
+        /*
         Divider(),
         // チュートリアル再表示
         ListTile(
@@ -63,7 +64,7 @@ class SettingsScreen extends ConsumerWidget {
               ),
             );
           },
-        ),
+        ),*/
         Divider(),
         // アプリの使い方
         ListTile(
