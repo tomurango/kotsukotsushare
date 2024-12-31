@@ -3,6 +3,8 @@ import 'package:material_color_utilities/material_color_utilities.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:purchases_flutter/purchases_flutter.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'firebase_options.dart';
 import 'src/auth_wrapper.dart';
 
@@ -26,6 +28,13 @@ void main() async {
 
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
+  );
+
+  await dotenv.load(fileName: ".env");
+
+  // RevenueCat SDK の初期化
+  await Purchases.configure(
+    PurchasesConfiguration(dotenv.env['REVENUECAT_PUBLIC_KEY']!),
   );
 
   runApp(ProviderScope(

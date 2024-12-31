@@ -27,7 +27,7 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
 
     final tutorialPages = [
       _TutorialPage(
-        imagePath: 'assets/images/DSC_0021.JPG',
+        imagePath: 'assets/images/tutorial/illust.png',
         title: '自分にとって\n大切なことを見つける',
         description: 'このアプリでは、あなたが「大切」と感じることを5つまで考えることから始めます。\n\n上限を設けることで、大切なものとそうでないものを明確に区別し、重要でないものに振り回されることを減らせます。',
         pageIndex: 0,
@@ -120,7 +120,8 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
                             ),
                             const SizedBox(width: 4), // アイコンとテキストの間にスペースを追加
                             Text(
-                              'チュートリアル終了',
+                              //'チュートリアル終了',
+                              '基本理念ガイド終了',
                               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                                 color: Colors.white, // 色を白に指定
                                 fontSize: 18, // 必要ならフォントサイズを変更
@@ -189,7 +190,7 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
       builder: (context) {
         return AlertDialog(
           title: Text('使い方ガイドを表示しますか？'),
-          content: Text('チュートリアルが完了しました。\n続けてアプリの使い方ガイドを表示しますか？'),
+          content: Text('基本理念ガイドが完了しました。\n続けてアプリの使い方ガイドを表示しますか？'),
           actions: [
             TextButton(
               onPressed: () {

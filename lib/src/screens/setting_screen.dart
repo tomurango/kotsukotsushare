@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:purchases_flutter/purchases_flutter.dart';
 import 'tutorial_screen.dart';
 import 'how_to_use_screen.dart';
+import 'subscription_screen.dart';
 
 class SettingsScreen extends ConsumerWidget {
   final Function(int) onNavigate;
@@ -16,6 +18,70 @@ class SettingsScreen extends ConsumerWidget {
 
     return ListView(
       children: [
+        // ユーザープランの確認と購入画面への遷移
+        FutureBuilder<String?>(
+          future: getUserPlan(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return ListTile(
+                leading: Icon(Icons.subscriptions),
+                title: Text('プランを確認中...'),
+                subtitle: Text('現在のプラン情報を取得しています'),
+              );
+            }
+
+            final userPlan = snapshot.data ?? '不明';
+            return ListTile(
+              leading: Icon(Icons.subscriptions),
+              title: Text('現在のプラン: $userPlan'),
+              subtitle: Text(userPlan == 'Premium'
+                  ? 'プレミアムプランをご利用中です'
+                  : 'プレミアムプランを購入できます'),
+              onTap: () async {
+                if (userPlan == 'Free') {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => SubscriptionScreen(),
+                    ),
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text("すでにプレミアムプランをご利用中です")),
+                  );
+                }
+              },
+            );
+          },
+        ),
+        Divider(),
+        // チュートリアル再表示
+        ListTile(
+          leading: Icon(Icons.flag),
+          title: Text('アプリの基本理念を再確認'),
+          subtitle: Text('アプリの目指す価値や考え方をもう一度振り返ることができます'),
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => const TutorialScreen(),
+              ),
+            );
+          },
+        ),
+        Divider(),
+        // アプリの使い方
+        ListTile(
+          leading: Icon(Icons.help),
+          title: Text('アプリの使い方'),
+          subtitle: Text('アプリの使い方を確認します'),
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => const HowToUseScreen(),
+              ),
+            );
+          },
+        ),
+        Divider(),
         // サインアウト
         ListTile(
           leading: Icon(Icons.exit_to_app),
@@ -48,35 +114,6 @@ class SettingsScreen extends ConsumerWidget {
           subtitle: Text('アカウントを削除します'),
           onTap: () {
             _deleteAccount(context);
-          },
-        ),
-        /*
-        Divider(),
-        // チュートリアル再表示
-        ListTile(
-          leading: Icon(Icons.help),
-          title: Text('チュートリアルを再表示'),
-          subtitle: Text('アプリのチュートリアルを再度確認します'),
-          onTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) => const TutorialScreen(),
-              ),
-            );
-          },
-        ),*/
-        Divider(),
-        // アプリの使い方
-        ListTile(
-          leading: Icon(Icons.help),
-          title: Text('アプリの使い方'),
-          subtitle: Text('アプリの使い方を確認します'),
-          onTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) => const HowToUseScreen(),
-              ),
-            );
           },
         ),
         Divider(),
@@ -153,4 +190,19 @@ class SettingsScreen extends ConsumerWidget {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("アカウント削除に失敗しました: $e")));
     }
   }
+
+  Future<String?> getUserPlan() async {
+    try {
+      final customerInfo = await Purchases.getCustomerInfo();
+      if (customerInfo.entitlements.active.containsKey('premium')) {
+        return 'Premium';
+      } else {
+        return 'Free';
+      }
+    } catch (e) {
+      print('Error fetching customer info: $e');
+      return null;
+    }
+  }
+
 }

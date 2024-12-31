@@ -24,8 +24,7 @@ class MainScreen extends HookConsumerWidget {
 
     final titles = ['マイメモ', 'みんなの記録', '設定'];
 
-    /*
-    // チュートリアルが未完成のため、チュートリアル画面は表示しない
+    // チュートリアル表示
     useEffect(() {
       if (userData.asData?.value?['tutorialCompleted'] == false) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -34,7 +33,6 @@ class MainScreen extends HookConsumerWidget {
       }
       return null;
     }, [userData]);
-    */
 
     return Scaffold(
       appBar: AppBar(
