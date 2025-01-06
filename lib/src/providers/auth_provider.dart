@@ -12,6 +12,15 @@ final userProvider = Provider<User?>((ref) {
   return ref.watch(authStateProvider).value;
 });
 
+// 課金状態のProvider
+final subscriptionStatusProvider = Provider<bool>((ref) {
+  // 実際にはRevenueCatやFirestoreから状態を取得する
+  return true; // 課金済みならtrue
+});
+
+// 現在のカードIDを管理するProvider
+final currentCardIdProvider = StateProvider<String?>((ref) => null);
+
 // Firestoreのカードデータを取得するProvider
 final cardsProvider = StreamProvider.autoDispose<List<CardData>>((ref) {
   final user = ref.watch(userProvider);

@@ -52,6 +52,7 @@ class MypageScreen extends ConsumerWidget {
                                 title: card.title,
                                 cardId: card.id,
                                 description: card.description,
+                                ref: ref,
                               )),
                           if (category1Cards.length < 5)
                             AddCardSkeleton(
@@ -99,6 +100,7 @@ class MypageScreen extends ConsumerWidget {
                                 title: card.title,
                                 cardId: card.id,
                                 description: card.description,
+                                ref: ref,
                               )),
                           AddCardSkeleton( 
                             title: 'Unimportant',
@@ -128,8 +130,14 @@ class CardItem extends StatelessWidget {
   final String title;
   final String cardId; // カードIDを追加
   final String description;
+  final WidgetRef ref; // refを追加
 
-  CardItem({required this.title, required this.cardId, required this.description/*, required this.onTap*/});
+  CardItem({
+    required this.title,
+    required this.cardId,
+    required this.description,
+    required this.ref, // refを受け取る
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -142,10 +150,17 @@ class CardItem extends StatelessWidget {
           elevation: 4.0,
           child: InkWell(
             onTap: () {
+              // refを利用してcurrentCardIdProviderを更新
+              ref.read(currentCardIdProvider.notifier).state = cardId;
+
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => CardMemoScreen(cardId: cardId, title: title, description: description),
+                  builder: (context) => CardMemoScreen(
+                    cardId: cardId,
+                    title: title,
+                    description: description,
+                  ),
                 ),
               );
             },

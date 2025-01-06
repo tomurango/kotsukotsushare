@@ -150,19 +150,6 @@ class _HowToUseScreenState extends State<HowToUseScreen> {
     );
   }
 
-  /*
-  Widget _buildPageIndicator(int index, int currentPage) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 4.0),
-      width: currentPage == index ? 12.0 : 8.0,
-      height: 8.0,
-      decoration: BoxDecoration(
-        color: currentPage == index ? Colors.black : Colors.grey,
-        borderRadius: BorderRadius.circular(4.0),
-      ),
-    );
-  }
-  */
   Widget _buildPageIndicator(BuildContext context, int index, int currentPage) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 4.0),

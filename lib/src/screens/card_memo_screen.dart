@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/auth_provider.dart';
 import '../providers/card_memos_provider.dart';
+import '../providers/advice_provider.dart';
 import '../widgets/reflection_bottom_sheet.dart';
 import '../models/memo_data.dart';
 import 'package:intl/intl.dart';
 import 'edit_card_screen.dart';
+import 'ai_chat_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -126,7 +128,12 @@ class CardMemoScreen extends ConsumerWidget {
               ),
             ),
           ),
-          Divider(),
+          Divider(
+            height: 1, // 全体の高さを1に設定
+            thickness: 1, // 線の太さを1に設定
+            color: Colors.grey.shade300, // 線の色を調整（任意）
+          ),
+
           Expanded(
             child: memosAsyncValue.when(
               data: (memos) {
@@ -135,101 +142,130 @@ class CardMemoScreen extends ConsumerWidget {
                 }
 
                 return ListView.builder(
-                  itemCount: memos.length * 2,
+                  itemCount: memos.length,
+                  padding: const EdgeInsets.all(0), // 上下の余白をなくす
                   itemBuilder: (context, index) {
-                    if (index.isOdd) {
-                      return Divider();
-                    }
+                    final memo = memos[index];
 
-                    final memoIndex = index ~/ 2;
-                    final memo = memos[memoIndex];
-
-                    // memo.typeに基づいて表示内容を分ける
-                    return ListTile(
-                      title: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          if (memo.type == 'reflection') ...[
-                            Text("何があったか: ${memo.content}"),
-                            SizedBox(height: 4),
-                            Text("どう感じたか: ${memo.feeling}"),
-                            SizedBox(height: 4),
-                            Text("面白い真実は何か: ${memo.truth}"),
-                          ] else
-                            Text(memo.content),
-                        ],
+                    return Container(
+                      decoration: BoxDecoration(
+                        border: Border(
+                          bottom: BorderSide(color: Colors.grey.shade300), // 下線を追加
+                        ),
                       ),
-                      subtitle: Text(
-                        "${formatDate(memo.createdAt)} - ${memo.isPublic ? 'Public' : 'Private'}",
-                      ),
-                      trailing: PopupMenuButton<String>(
-                        onSelected: (value) {
-                          switch (value) {
-                            case 'edit':
-                              _editMemo(context, memo);
-                              break;
-                            case 'delete':
-                              _deleteMemo(context, memo);
-                              break;
-                            case 'togglePublic':
-                              _togglePublicFlag(context, memo);
-                              break;
-                          }
-                        },
-                        itemBuilder: (BuildContext context) => [
-                          PopupMenuItem(value: 'edit', child: Text('編集')),
-                          PopupMenuItem(value: 'delete', child: Text('削除')),
-                          PopupMenuItem(
-                            value: 'togglePublic',
-                            child: Text(memo.isPublic ? '非公開にする' : '公開にする'),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                );
-
-
-                /*
-                return ListView.builder(
-                  itemCount: memos.length * 2 ,
-                  itemBuilder: (context, index) {
-                    if (index.isOdd) {
-                      return Divider();
-                    }
-                    final memoIndex = index ~/ 2;
-                    final memo = memos[memoIndex];
-
-                    // memo.typeに基づいて表示内容を分ける
-                    if (memo.type == 'reflection') {
-                      // reflectionの場合、feelingとtruthも表示
-                      return ListTile(
-                        title: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(16.0, 0, 16.0, 16.0),
+                        child: Stack(
                           children: [
-                            Text("何があったか: ${memo.content}"), // "内容"
-                            SizedBox(height: 4),
-                            Text("どう感じたか: ${memo.feeling}"), // "どう感じたか"
-                            SizedBox(height: 4),
-                            Text("面白い真実は何か: ${memo.truth}"), // "面白い真実は何か"
+                            // メモの詳細とアクション
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // 日付と公開情報を上部に表示
+                                SizedBox(height: 12),
+                                Text(
+                                  "${formatDate(memo.createdAt)} - ${memo.isPublic ? 'Public' : 'Private'}",
+                                  style: TextStyle(color: Colors.grey, fontSize: 14),
+                                ),
+                                SizedBox(height: 8),
+                                // メモ内容
+                                Text(
+                                  memo.content,
+                                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                ),
+                                SizedBox(height: 8),
+
+                                Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: Consumer(
+                                    builder: (context, ref, child) {
+                                      // `adviceNotifierProvider` の状態を取得
+                                      final adviceState = ref.watch(adviceNotifierProvider);
+                                      final user = ref.watch(userProvider);
+                                      
+                                      if (user == null) {
+                                        return Text("ユーザー情報が取得できません");
+                                      }
+
+                                      // 初期化処理
+                                      ref.read(adviceNotifierProvider.notifier).fetchAdvice(memo.id, cardId, user.uid);
+
+                                      // 現在のメモに対応するアドバイスを取得
+                                      final adviceText = adviceState[memo.id] ?? "AIからのアドバイスを見る";
+
+                                      return TextButton.icon(
+                                        icon: Icon(Icons.smart_toy, size: 16, color: Colors.teal),
+                                        label: Text(
+                                          adviceText,
+                                          style: TextStyle(color: Colors.teal),
+                                          overflow: TextOverflow.ellipsis, // 長いテキストを省略
+                                        ),
+                                        style: TextButton.styleFrom(
+                                          backgroundColor: Colors.teal.withOpacity(0.1), // ボタンの背景色
+                                          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(8), // 角を丸める
+                                          ),
+                                          splashFactory: InkRipple.splashFactory, // 押下時のエフェクト
+                                        ),
+                                        onPressed: () {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) => AIChatScreen(
+                                                cardId: cardId,
+                                                memoId: memo.id,
+                                                memoContent: memo.content,
+                                                title: title,
+                                                description: description,
+                                                firstAdvice: adviceState[memo.id] == null, // アドバイスの有無を確認
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ],
+                            ),
+
+                            // 右上のオプションメニュー
+                            Positioned(
+                              top: 0,
+                              right: 0,
+                              child: PopupMenuButton<String>(
+                                onSelected: (value) {
+                                  switch (value) {
+                                    case 'edit':
+                                      _editMemo(context, memo);
+                                      break;
+                                    case 'delete':
+                                      _deleteMemo(context, memo);
+                                      break;
+                                    case 'togglePublic':
+                                      _togglePublicFlag(context, memo);
+                                      break;
+                                  }
+                                },
+                                itemBuilder: (BuildContext context) => [
+                                  PopupMenuItem(value: 'edit', child: Text('編集')),
+                                  PopupMenuItem(value: 'delete', child: Text('削除')),
+                                  PopupMenuItem(
+                                    value: 'togglePublic',
+                                    child: Text(memo.isPublic ? '非公開にする' : '公開にする'),
+                                  ),
+                                ],
+                              ),
+                            ),
                           ],
                         ),
-                        subtitle: Text(
-                          "${formatDate(memo.createdAt)} - ${memo.isPublic ? 'Public' : 'Private'}",
-                        ),
-                      );
-                    } else {
-                      // memoの場合、contentのみ表示
-                      return ListTile(
-                        title: Text(memo.content),
-                        subtitle: Text(
-                          "${formatDate(memo.createdAt)} - ${memo.isPublic ? 'Public' : 'Private'}",
-                        ),
-                      );
-                    }
+                      ),
+                    );
+
                   },
                 );
-                */
+
               },
               loading: () => Center(child: CircularProgressIndicator()),
               error: (err, stack) => Center(child: Text('Error: $err')),
