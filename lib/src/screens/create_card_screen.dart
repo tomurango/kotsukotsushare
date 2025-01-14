@@ -86,6 +86,8 @@ class CreateCardScreen extends HookWidget {
               decoration: InputDecoration(labelText: '説明'),
             ),
             SizedBox(height: 20),
+            Text('※ここで入力した内容は他のユーザーに公開されないので、安心して記録してください。'),
+            SizedBox(height: 20),
             ElevatedButton(
               onPressed: saveCard,
               child: Text('作成する'),
