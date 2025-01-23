@@ -46,10 +46,6 @@ class AIResponse extends StatelessWidget {
         ),
         // 余白
         const SizedBox(height: 16),
-        // 水平線
-        const Divider(height: 1, thickness: 1),
-        // 余白
-        const SizedBox(height: 16),
       ],
     );
   }

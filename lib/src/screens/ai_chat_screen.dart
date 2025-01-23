@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'subscription_screen.dart';
 import '../providers/auth_provider.dart';
 import '../providers/advice_provider.dart';
@@ -34,6 +35,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
   bool _isInitializing = false; // 初期化中かどうかのフラグ
   bool _isPastLoading = false; // ロード中フラグ
   bool _hasMorePastData = true; // 更なるデータがあるかのフラグ
+  bool _isSending = false; // 送信中かどうかのフラグ
   List<QueryDocumentSnapshot> _pastMessages = []; // 過去のメッセージ
   DocumentSnapshot? _lastDocument; // 最後に取得したドキュメント
   int _pageSize = 20; // 1ページあたりの取得件数
@@ -55,7 +57,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
       // 初回アドバイスの取得
       final advice = await _fetchAIAdvice(widget.memoContent);
       if (mounted) {
-        await _saveAdviceToFirestore(widget.cardId, widget.memoId, advice);
+        //await _saveAdviceToFirestore(widget.cardId, widget.memoId, advice);
 
         // Riverpodの状態更新
         ref
@@ -331,14 +333,26 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
           ),
           if (_messageController.text.trim().isNotEmpty) ...[
             SizedBox(width: 8),
+
             ElevatedButton(
-              onPressed: () {
-                final text = _messageController.text.trim();
-                if (text.isNotEmpty) {
-                  _handleMessageSubmission(text);
-                }
-              },
-              child: Text("送信"),
+              onPressed: _isSending
+                  ? null // 送信中は無効化
+                  : () {
+                      final text = _messageController.text.trim();
+                      if (text.isNotEmpty) {
+                        _handleMessageSubmission(text);
+                      }
+                    },
+              child: _isSending
+                  ? SizedBox(
+                      height: 16,
+                      width: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : Text("送信"),
             ),
           ],
         ],
@@ -346,41 +360,55 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
     );
   }
   
-  Future<String> _fetchAIAdvice(String content) async {
-    await Future.delayed(Duration(seconds: 2)); // ダミー遅延
+  
+  Future<String> _fetchAIAdvice(
+    String userMessage, {
+    List<Map<String, dynamic>> pastMessages = const [],
+  }) async {
+    final functions = FirebaseFunctions.instance;
 
-    // contentの長さを確認して範囲内の部分文字列を取得
-    final previewLength = content.length < 10 ? content.length : 10;
-    final preview = content.substring(0, previewLength);
+    // FirebaseAuth からユーザーIDを取得
+    final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
 
-    return "アドバイス: $preview...に注目しましょう。";
-  }
+    // 空のリストでもJSON互換型を確保し、createdAtをISO 8601形式に変換
+    final formattedPastMessages = pastMessages.map((msg) {
+      final createdAt = msg['createdAt'];
+      return {
+        'content': msg['content'],
+        'isAI': msg['isAI'],
+        'createdAt': createdAt is DateTime
+            ? createdAt.toIso8601String() // DateTimeをISO 8601形式に変換
+            : createdAt, // すでに適切な形式ならそのまま
+      };
+    }).toList();
 
-  Future<void> _saveAdviceToFirestore(
-      String cardId, String memoId, String advice) async {
-    final userId = FirebaseAuth.instance.currentUser?.uid;
-    if (userId == null) return;
+    try {
+      final parameters = {
+        'userMessage': userMessage,
+        'pastMessages': formattedPastMessages,
+        'userId': userId,
+        'cardId': widget.cardId,
+        'memoId': widget.memoId,
+      };
 
-    await FirebaseFirestore.instance
-        .collection('users')
-        .doc(userId)
-        .collection('cards')
-        .doc(cardId)
-        .collection('memos')
-        .doc(memoId)
-        .collection('advices')
-        .add({
-      'content': advice,
-      'isAI': true,
-      'createdAt': Timestamp.now(),
-    });
+      final result = await functions.httpsCallable('getAIAdvice').call(parameters);
 
-    // Riverpodの状態を更新
-    ref.read(adviceNotifierProvider.notifier).updateAdvice(memoId, advice);
+      // 正常なレスポンスを返す
+      //print('AIアドバイスの取得に成功: ${result.data}');
+      return result.data;
+    } catch (e) {
+      print('Cloud Functionsの呼び出しエラー: $e');
+      return 'AIアドバイスの取得に失敗しました。'; // エラーメッセージを返す
+    }
   }
 
   Future<void> _handleMessageSubmission(String userMessage) async {
-    if (userMessage.isEmpty) return;
+    //if (userMessage.isEmpty) return;
+    if (userMessage.isEmpty || _isSending) return;
+
+    setState(() {
+      _isSending = true; // 送信中フラグを立てる
+    });
 
     // Firestoreコレクションの参照を取得
     final collection = FirebaseFirestore.instance
@@ -393,30 +421,53 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
         .collection('advices');
 
     try {
-        // ユーザーのメッセージをFirestoreに保存
-        await collection.add({
-        'content': userMessage,
-        'isAI': false,
-        'createdAt': Timestamp.now(),
-        });
+      // Firestoreから過去20件のやり取りを取得
+      final pastMessagesSnapshot = await collection
+          .orderBy('createdAt', descending: true)
+          .limit(20)
+          .get();
 
-        // メッセージ送信後に入力フィールドをクリア（画面がまだ存在している場合のみ実行）
-        if (mounted) {
+      final pastMessages = pastMessagesSnapshot.docs
+        .map((doc) => {
+              'content': doc['content'],
+              'isAI': doc['isAI'],
+              'createdAt': (doc['createdAt'] as Timestamp).toDate(),
+            })
+        .toList()
+        .reversed
+        .toList(); // 時系列順に逆転
+
+      // ユーザーのメッセージをFirestoreに保存
+      await collection.add({
+      'content': userMessage,
+      'isAI': false,
+      'createdAt': Timestamp.now(),
+      });
+
+      // メッセージ送信後に入力フィールドをクリア（画面がまだ存在している場合のみ実行）
+      if (mounted) {
         _messageController.clear();
-        }
+      }
 
-        // AIのレスポンスを生成
-        final aiResponse = await _fetchAIAdvice(userMessage);
+      // AIのレスポンスを生成
+      final aiResponse = await _fetchAIAdvice(userMessage, pastMessages: pastMessages);
 
-        // FirestoreにAIのレスポンスを保存
-        await _saveAdviceToFirestore(widget.cardId, widget.memoId, aiResponse);
+      ref.read(adviceNotifierProvider.notifier).updateAdvice(widget.memoId, aiResponse);
+      // FirestoreにAIのレスポンスを保存
+      //await _saveAdviceToFirestore(widget.cardId, widget.memoId, aiResponse);
     } catch (e) {
-        // エラー処理
-        if (mounted) {
+      // エラー処理
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('エラーが発生しました: $e')),
         );
-        }
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSending = false; // 送信中フラグを解除
+        });
+      }
     }
   }
 }

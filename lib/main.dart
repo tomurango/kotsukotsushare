@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:material_color_utilities/material_color_utilities.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'firebase_options.dart';
 import 'src/auth_wrapper.dart';
+import 'package:flutter/foundation.dart';
 
 void main() async {
   // 基本カラーをTeal色 (#008080) に設定
@@ -30,6 +32,8 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
+  _initializeFirebaseFunctions(); // FirebaseFunctionsのエミュレーター設定など
+
   await dotenv.load(fileName: ".env");
 
   // RevenueCat SDK の初期化
@@ -43,6 +47,15 @@ void main() async {
       darkScheme: darkColorScheme,
     ),
   ));
+}
+
+void _initializeFirebaseFunctions() {
+  final functions = FirebaseFunctions.instance;
+
+  // デバッグモードでエミュレーターを使用
+  if (kDebugMode) {
+    functions.useFunctionsEmulator('localhost', 5001); // エミュレーター設定
+  }
 }
 
 class MyApp extends StatelessWidget {

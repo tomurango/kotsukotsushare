@@ -58,10 +58,6 @@ class ReflectionScreen extends ConsumerWidget {
                     Text("面白い真実は何か: ${memo.truth}"), // "面白い真実は何か"
                   ],
                 ),
-                /* 一時的に時刻は非表示
-                subtitle: Text(
-                  "${formatDate(memo.createdAt)}",
-                ),*/
                 trailing: IconButton(
                   icon: Icon(Icons.more_vert),
                   onPressed: () {
@@ -73,10 +69,6 @@ class ReflectionScreen extends ConsumerWidget {
               // memoの場合、contentのみ表示
               return ListTile(
                 title: Text(memo.content),
-                /* 一時的に時刻は非表示
-                subtitle: Text(
-                  "${formatDate(memo.createdAt)}",
-                ),*/
                 trailing: IconButton(
                   icon: Icon(Icons.more_vert),
                   onPressed: () {
