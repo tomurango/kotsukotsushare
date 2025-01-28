@@ -16,7 +16,7 @@ class CustomBottomAppBar extends StatelessWidget {
         ),
         BottomNavigationBarItem(
           icon: Icon(Icons.group),
-          label: 'みんなの記録',
+          label: '質問掲示板',
         ),
         BottomNavigationBarItem(
           icon: Icon(Icons.settings),

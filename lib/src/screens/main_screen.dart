@@ -3,6 +3,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'mypage_screen.dart';
 import 'reflection_screen.dart';
+import 'question_board_screen.dart';
 import 'setting_screen.dart';
 import 'tutorial_screen.dart';
 import '../widgets/custom_bottom_app_bar.dart';
@@ -18,11 +19,12 @@ class MainScreen extends HookConsumerWidget {
 
     final pages = [
       MypageScreen(onNavigate: (index) => selectedIndex.value = index),
-      ReflectionScreen(onNavigate: (index) => selectedIndex.value = index),
+      //ReflectionScreen(onNavigate: (index) => selectedIndex.value = index),
+      QuestionBoardScreen(onNavigate: (index) => selectedIndex.value = index),
       SettingsScreen(onNavigate: (index) => selectedIndex.value = index),
     ];
 
-    final titles = ['マイメモ', 'みんなの記録', '設定'];
+    final titles = ['マイメモ', '質問掲示板', '設定'];
 
     // チュートリアル表示
     useEffect(() {

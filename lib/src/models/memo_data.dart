@@ -4,7 +4,7 @@ class MemoData {
   final String id;
   final String content;
   final DateTime createdAt;
-  final bool isPublic;
+  //final bool isPublic;
   final String type;
   final String feeling;
   final String truth;
@@ -14,7 +14,7 @@ class MemoData {
     required this.id,
     required this.content,
     required this.createdAt,
-    required this.isPublic,
+    //required this.isPublic,
     required this.type,
     required this.feeling,
     required this.truth,
@@ -27,7 +27,7 @@ class MemoData {
     id: '',
     content: '',
     createdAt: DateTime.now(),
-    isPublic: true,
+    //isPublic: true,
     type: '',
     feeling: '',
     truth: '',

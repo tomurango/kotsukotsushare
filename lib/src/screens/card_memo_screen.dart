@@ -164,7 +164,8 @@ class CardMemoScreen extends ConsumerWidget {
                                 // 日付と公開情報を上部に表示
                                 SizedBox(height: 12),
                                 Text(
-                                  "${formatDate(memo.createdAt)} - ${memo.isPublic ? 'Public' : 'Private'}",
+                                  //"${formatDate(memo.createdAt)} - ${memo.isPublic ? 'Public' : 'Private'}",
+                                  formatDate(memo.createdAt),
                                   style: TextStyle(color: Colors.grey, fontSize: 14),
                                 ),
                                 SizedBox(height: 8),
@@ -218,7 +219,7 @@ class CardMemoScreen extends ConsumerWidget {
                                                 memoContent: memo.content,
                                                 title: title,
                                                 description: description,
-                                                firstAdvice: adviceState[memo.id] == null, // アドバイスの有無を確認
+                                                isFirstAdvice: adviceState[memo.id] == null, // アドバイスの有無を確認
                                               ),
                                             ),
                                           );
@@ -243,18 +244,11 @@ class CardMemoScreen extends ConsumerWidget {
                                     case 'delete':
                                       _deleteMemo(context, memo);
                                       break;
-                                    case 'togglePublic':
-                                      _togglePublicFlag(context, memo);
-                                      break;
                                   }
                                 },
                                 itemBuilder: (BuildContext context) => [
                                   PopupMenuItem(value: 'edit', child: Text('編集')),
                                   PopupMenuItem(value: 'delete', child: Text('削除')),
-                                  PopupMenuItem(
-                                    value: 'togglePublic',
-                                    child: Text(memo.isPublic ? '非公開にする' : '公開にする'),
-                                  ),
                                 ],
                               ),
                             ),
@@ -359,28 +353,5 @@ void _deleteMemo(BuildContext context, MemoData memo) async {
         );
       }
     }
-  }
-}
-
-void _togglePublicFlag(BuildContext context, MemoData memo) async {
-  try {
-    await FirebaseFirestore.instance
-        .collection('users')
-        .doc(FirebaseAuth.instance.currentUser?.uid)
-        .collection('cards')
-        .doc(memo.cardId)
-        .collection('memos')
-        .doc(memo.id)
-        .update({'isPublic': !memo.isPublic});
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(memo.isPublic ? '非公開にしました' : '公開にしました'),
-      ),
-    );
-  } catch (e) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('更新に失敗しました: $e')),
-    );
   }
 }

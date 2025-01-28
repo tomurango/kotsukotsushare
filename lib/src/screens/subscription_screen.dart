@@ -137,11 +137,6 @@ class SubscriptionScreen extends StatelessWidget {
 
                   // 理由リスト
                   _buildBenefitItem(
-                    icon: Icons.comment,
-                    title: "コメントの確認",
-                    description: "他のユーザーからのコメントを確認できます。",
-                  ),
-                  _buildBenefitItem(
                     icon: Icons.smart_toy,
                     title: "AIアドバイス",
                     description: "AIによるカスタマイズされたアドバイスが受け取れます。",

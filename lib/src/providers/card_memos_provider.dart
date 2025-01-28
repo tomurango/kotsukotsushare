@@ -22,15 +22,10 @@ final memosProvider = StreamProvider.family<List<MemoData>, String>((ref, cardId
               id: doc.id,
               content: data['content'] ?? '',
               createdAt: (data['createdAt'] as Timestamp).toDate(),
-              isPublic: data['isPublic'] ?? false,
+              //isPublic: data['isPublic'] ?? false,
               type: data['type'] ?? '',
               feeling: data['feeling'] ?? '',
               truth: data['truth'] ?? '',
             );
           }).toList());
-});
-
-// 公開フラグを管理するためのStateProvider
-final isPublicProvider = StateProvider<bool>((ref) {
-  return true; // デフォルトで公開状態に設定
 });

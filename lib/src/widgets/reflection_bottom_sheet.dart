@@ -40,7 +40,7 @@ class _ReflectionBottomSheetState extends ConsumerState<ReflectionBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final isPublic = ref.watch(isPublicProvider);
+    // final isPublic = ref.watch(isPublicProvider);
     final isKeyboardVisible = MediaQuery.of(context).viewInsets.bottom > 0;
 
     return Padding(
@@ -102,27 +102,11 @@ class _ReflectionBottomSheetState extends ConsumerState<ReflectionBottomSheet> {
             ),
           ],
           SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('公開 / 非公開'),
-              Row(
-                children: [
-                  // 現在の公開・非公開状態をテキストで表示
-                  Text(isPublic ? '公開中' : '非公開中'),
-                  SizedBox(width: 8), // ラベルとスイッチの間にスペースを追加
-                  Switch(
-                    value: isPublic,
-                    onChanged: (value) {
-                      // RiverpodのStateProviderで状態を更新
-                      ref.read(isPublicProvider.notifier).state = value;
-                    },
-                  ),
-                ],
-              ),
-            ],
+          // メモは公開されない旨がわかるテキストを表示
+          Text(
+            '※ メモは公開されません',
+            style: TextStyle(color: Colors.grey),
           ),
-          SizedBox(height: 16),
 
           ElevatedButton(
             onPressed: () async {
@@ -139,7 +123,7 @@ class _ReflectionBottomSheetState extends ConsumerState<ReflectionBottomSheet> {
                 // 上書きデータを構築
                 final updatedData = {
                   'content': contentController.text,
-                  'isPublic': isPublic,
+                  //'isPublic': isPublic,
                   'type': selectedSegment == 0 ? 'memo' : 'reflection',
                   'updatedAt': Timestamp.now(),
                 };

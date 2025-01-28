@@ -33,19 +33,19 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
         pageIndex: 0,
       ),
       _TutorialPage(
-        imagePath: 'assets/images/Autumn.png',
+        imagePath: 'assets/images/tutorial/Autumn.png',
         title: '日々の気付きを\nメモに残す',
         description: '大切なことについての気付きをメモに残しましょう。\n\n気になって調べたことから、日常の些細なことでも大丈夫です。\n\n書き留めることで、気持ちが整理され、次の行動に活かせるようになります。',
         pageIndex: 1,
       ),
       _TutorialPage(
-        imagePath: 'assets/images/Winter.png',
+        imagePath: 'assets/images/tutorial/Winter.png',
         title: 'ふとした時に\n思い出す',
         description: 'ついダラダラと過ごしてしまう時や、やるべきことに集中できない時も、まずはそんな自分を認めることが重要です。\n\nそして、「本当に大切なこと」を思い出せるようにしましょう。\n\n自分にとって大切なことを思い出すことで、忙しい毎日でも自分らしさを少しずつ取り戻せます。',
         pageIndex: 2,
       ),
       _TutorialPage(
-        imagePath: 'assets/images/Spring.png',
+        imagePath: 'assets/images/tutorial/Spring.png',
         title: 'みんなの価値観や\n知識を知る',
         description: '考えてもわからない時は、周りの人を頼ることも重要です。\n\n他のユーザーの考えや価値観に触れることで、それまでは気づけなかった自分を発見できるかもしれません。\n\n視点を広げ、新たなアイデアや気付きを得られることは、日常のコミュニケーションや成長に大きく役立つでしょう。',
         pageIndex: 3,

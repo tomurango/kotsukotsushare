@@ -7,6 +7,7 @@ import 'package:purchases_flutter/purchases_flutter.dart';
 import 'tutorial_screen.dart';
 import 'how_to_use_screen.dart';
 import 'subscription_screen.dart';
+import '../providers/subscription_status_notifier.dart';
 
 class SettingsScreen extends ConsumerWidget {
   final Function(int) onNavigate;
@@ -15,45 +16,35 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = FirebaseAuth.instance.currentUser;
+    final isPremium = ref.watch(subscriptionStatusProvider);
 
     return ListView(
       children: [
         // ユーザープランの確認と購入画面への遷移
-        FutureBuilder<String?>(
-          future: getUserPlan(),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return ListTile(
-                leading: Icon(Icons.subscriptions),
-                title: Text('プランを確認中...'),
-                subtitle: Text('現在のプラン情報を取得しています'),
+        ListTile(
+          leading: Icon(Icons.subscriptions),
+          title: Text(
+            isPremium ? '現在のプラン: Premium' : '現在のプラン: Free',
+          ),
+          //title: Text('現在のプラン: $userPlan'),
+          subtitle: Text(isPremium ? 'プレミアムプランをご利用中です' : 'プレミアムプランを購入できます'),
+          onTap: () {
+            if (!isPremium) {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => SubscriptionScreen(),
+                ),
+              );
+            } else if (isPremium) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text("すでにプレミアムプランをご利用中です")),
               );
             }
-
-            final userPlan = snapshot.data ?? '不明';
-            return ListTile(
-              leading: Icon(Icons.subscriptions),
-              title: Text('現在のプラン: $userPlan'),
-              subtitle: Text(userPlan == 'Premium'
-                  ? 'プレミアムプランをご利用中です'
-                  : 'プレミアムプランを購入できます'),
-              onTap: () async {
-                if (userPlan == 'Free') {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => SubscriptionScreen(),
-                    ),
-                  );
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text("すでにプレミアムプランをご利用中です")),
-                  );
-                }
-              },
-            );
           },
         ),
-        Divider(),
+        Divider(
+          height: 0,
+        ),
         // チュートリアル再表示
         ListTile(
           leading: Icon(Icons.flag),
@@ -67,7 +58,9 @@ class SettingsScreen extends ConsumerWidget {
             );
           },
         ),
-        Divider(),
+        Divider(
+          height: 0,
+        ),
         // アプリの使い方
         ListTile(
           leading: Icon(Icons.help),
@@ -81,7 +74,9 @@ class SettingsScreen extends ConsumerWidget {
             );
           },
         ),
-        Divider(),
+        Divider(
+          height: 0,
+        ),
         // サインアウト
         ListTile(
           leading: Icon(Icons.exit_to_app),
@@ -106,7 +101,9 @@ class SettingsScreen extends ConsumerWidget {
             }
           },
         ),
-        Divider(),
+        Divider(
+          height: 0,
+        ),
         // アカウント削除
         ListTile(
           leading: Icon(Icons.delete),
@@ -116,7 +113,9 @@ class SettingsScreen extends ConsumerWidget {
             _deleteAccount(context);
           },
         ),
-        Divider(),
+        Divider(
+          height: 0,
+        ),
       ],
     );
   }
@@ -190,19 +189,4 @@ class SettingsScreen extends ConsumerWidget {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("アカウント削除に失敗しました: $e")));
     }
   }
-
-  Future<String?> getUserPlan() async {
-    try {
-      final customerInfo = await Purchases.getCustomerInfo();
-      if (customerInfo.entitlements.active.containsKey('premium')) {
-        return 'Premium';
-      } else {
-        return 'Free';
-      }
-    } catch (e) {
-      print('Error fetching customer info: $e');
-      return null;
-    }
-  }
-
 }

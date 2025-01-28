@@ -6,8 +6,10 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'subscription_screen.dart';
 import '../providers/auth_provider.dart';
 import '../providers/advice_provider.dart';
+import '../providers/subscription_status_notifier.dart';
 import '../widgets/AIChat/user_bubble.dart';
 import '../widgets/AIChat/AI_response.dart';
+import '../widgets/AIChat/no_messages_placeholder.dart';
 
 class AIChatScreen extends ConsumerStatefulWidget {
   final String cardId;
@@ -15,7 +17,7 @@ class AIChatScreen extends ConsumerStatefulWidget {
   final String memoContent;
   final String title;
   final String description;
-  final bool firstAdvice;
+  final bool isFirstAdvice;
 
   AIChatScreen({
     required this.cardId,
@@ -23,7 +25,7 @@ class AIChatScreen extends ConsumerStatefulWidget {
     required this.memoContent,
     required this.title,
     required this.description,
-    this.firstAdvice = false,
+    this.isFirstAdvice = false,
   });
 
   @override
@@ -33,47 +35,52 @@ class AIChatScreen extends ConsumerStatefulWidget {
 class _AIChatScreenState extends ConsumerState<AIChatScreen> {
   final TextEditingController _messageController = TextEditingController();
   bool _isInitializing = false; // 初期化中かどうかのフラグ
+  bool _isInitialized = false; // 初期化が完了したかどうかのフラグ
   bool _isPastLoading = false; // ロード中フラグ
   bool _hasMorePastData = true; // 更なるデータがあるかのフラグ
   bool _isSending = false; // 送信中かどうかのフラグ
+  bool _showSubscriptionDialog = false; // ダイアログ表示フラグ
   List<QueryDocumentSnapshot> _pastMessages = []; // 過去のメッセージ
   DocumentSnapshot? _lastDocument; // 最後に取得したドキュメント
   int _pageSize = 20; // 1ページあたりの取得件数
 
   @override
-  void initState() {
-    super.initState();
-    if (widget.firstAdvice) {
-      _initialize(); // 初回アドバイスの取得を実行
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    // 初期化がまだの場合のみ実行
+    // if (!_isInitializing && !_isInitialized && widget.isFirstAdvice) {
+    if (!_isInitializing && widget.isFirstAdvice) {
+      _initialize(); // 初期化処理を呼び出す
     }
   }
 
   Future<void> _initialize() async {
-    setState(() {
-      _isInitializing = true; // 初期化中
-    });
-
+    _isInitializing = true; // フラグを直接操作
     try {
-      // 初回アドバイスの取得
-      final advice = await _fetchAIAdvice(widget.memoContent);
-      if (mounted) {
-        //await _saveAdviceToFirestore(widget.cardId, widget.memoId, advice);
+      final isSubscribed = ref.read(subscriptionStatusProvider);
 
-        // Riverpodの状態更新
-        ref
-            .read(adviceNotifierProvider.notifier)
-            .updateAdvice(widget.memoId, advice);
+      if (!isSubscribed) {
+        if (!_isInitialized) {
+          _showSubscriptionDialog = true; // ダイアログを表示するフラグをセット
+        }
+        return; // 未課金なら初期化を中断
+      }
+
+      final advice = await _fetchAIAdvice(widget.memoContent);
+      // _initialAdvice = advice;
+
+      if (mounted) {
+        ref.read(adviceNotifierProvider.notifier).updateAdvice(widget.memoId, advice);
       }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("アドバイスの取得に失敗しました: $e")),
-        );
-      }
+      //_hasError = true; // エラー時の処理
+      return;
     } finally {
       if (mounted) {
         setState(() {
           _isInitializing = false; // 初期化完了
+          _isInitialized = true;  // 初期化完了フラグを設定
         });
       }
     }
@@ -87,6 +94,33 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // ダイアログ表示（build メソッド内で）
+    if (_showSubscriptionDialog) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _showSubscriptionDialog = false; // 一度だけ表示するためにフラグをオフ
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text("AIアドバイスを受けるには"),
+            content: Text("AIアドバイスを受けるには、有料プランへの登録が必要です。"),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop(); // ダイアログを閉じる
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => SubscriptionScreen(),
+                    ),
+                  );
+                },
+                child: Text("有料プランへ"),
+              ),
+            ],
+          ),
+        );
+      });
+    }
+
     if (_isInitializing) {
       return Scaffold(
         appBar: AppBar(title: Text("AIチャット")),
@@ -94,23 +128,29 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
       );
     }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.memoContent),
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
-      body: Column(
-        children: [
-          // チャット画面
-          Expanded(
-            child: _buildChatStream(), // チャットのリスト
+    return GestureDetector(
+      onTap: () {
+        // 画面のどこかをタップしたらキーボードを閉じる
+        FocusScope.of(context).unfocus();
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(widget.memoContent),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => Navigator.pop(context),
           ),
-          // メッセージ入力
-          _buildMessageInput(),
-        ],
+        ),
+        body: Column(
+          children: [
+            // チャット画面
+            Expanded(
+              child: _buildChatStream(), // チャットのリスト
+            ),
+            // メッセージ入力
+            _buildMessageInput(),
+          ],
+        ),
       ),
     );
   }
@@ -222,6 +262,14 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
               return dateB.compareTo(dateA); // 降順 (新しい順)
             });
 
+            // 課金状態を確認
+            final isSubscribed = ref.watch(subscriptionStatusProvider);
+
+            // メッセージがなく、未課金の場合の専用画面
+            if (combinedMessages.isEmpty && !isSubscribed) {
+              return noMessagesPlaceholder(context);
+            }
+
             // リストの中で一番古いドキュメントを更新
             if (combinedMessages.isNotEmpty) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -293,7 +341,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
       },
     );
   }
-
+  
   Widget _buildMessageInput() {
     final isKeyboardVisible = MediaQuery.of(context).viewInsets.bottom > 0;
 
@@ -301,7 +349,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
       padding: EdgeInsets.only(
         left: 8.0,
         right: 8.0,
-        bottom: isKeyboardVisible ? MediaQuery.of(context).viewInsets.bottom : 32.0,
+        bottom: isKeyboardVisible ? 8.0 : 8.0,
       ),
       child: Row(
         children: [
@@ -409,6 +457,43 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
     setState(() {
       _isSending = true; // 送信中フラグを立てる
     });
+
+    // 課金ユーザでないならDialogを表示
+    final isSubscribed = ref.watch(subscriptionStatusProvider);
+    if (!isSubscribed) {
+      // キーボードを閉じる
+      FocusScope.of(context).unfocus();
+      // 一秒待ってからダイアログを表示
+      await Future.delayed(Duration(seconds: 1));
+      // 有料プランのダイアログを表示
+      await showDialog(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: Text("AIアドバイスを受けるには"),
+            content: Text("AIアドバイスを受けるには、有料プランへの登録が必要です。"),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => SubscriptionScreen(),
+                    ),
+                  );
+                },
+                child: Text("有料プランへ"),
+              ),
+            ],
+          );
+        },
+      );
+
+      setState(() {
+        _isSending = false; // 送信中フラグを解除
+      });
+      return;
+    }
 
     // Firestoreコレクションの参照を取得
     final collection = FirebaseFirestore.instance
