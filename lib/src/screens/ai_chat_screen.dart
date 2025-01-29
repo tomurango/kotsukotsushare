@@ -34,6 +34,7 @@ class AIChatScreen extends ConsumerStatefulWidget {
 
 class _AIChatScreenState extends ConsumerState<AIChatScreen> {
   final TextEditingController _messageController = TextEditingController();
+  final FocusNode _messageFocusNode = FocusNode();
   bool _isInitializing = false; // 初期化中かどうかのフラグ
   bool _isInitialized = false; // 初期化が完了したかどうかのフラグ
   bool _isPastLoading = false; // ロード中フラグ
@@ -356,6 +357,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
           Expanded(
             child: TextField(
               controller: _messageController,
+              focusNode: _messageFocusNode, 
               decoration: InputDecoration(
                 hintText: "Chokushiiに相談",
                 border: OutlineInputBorder(
@@ -462,9 +464,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
     final isSubscribed = ref.watch(subscriptionStatusProvider);
     if (!isSubscribed) {
       // キーボードを閉じる
-      FocusScope.of(context).unfocus();
-      // 一秒待ってからダイアログを表示
-      await Future.delayed(Duration(seconds: 1));
+      _messageFocusNode.unfocus();
       // 有料プランのダイアログを表示
       await showDialog(
         context: context,
