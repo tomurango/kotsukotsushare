@@ -5,17 +5,25 @@ class SubscriptionStatusNotifier extends StateNotifier<bool> {
   SubscriptionStatusNotifier() : super(false) {
     // 初期化時に課金状態をチェック
     checkUserPlan();
+
+    // 課金状態の変更をリッスン
+    Purchases.addCustomerInfoUpdateListener((customerInfo) {
+      _updateSubscriptionStatus(customerInfo);
+    });
   }
 
   Future<void> checkUserPlan() async {
     try {
       final customerInfo = await Purchases.getCustomerInfo();
-      // 'premium' が有効な場合に true、それ以外は false
-      state = customerInfo.entitlements.active.containsKey('premium');
+      _updateSubscriptionStatus(customerInfo);
     } catch (e) {
       print('Error fetching customer info: $e');
       state = false; // エラー時はデフォルトで非課金状態にする
     }
+  }
+
+  void _updateSubscriptionStatus(CustomerInfo customerInfo) {
+    state = customerInfo.entitlements.active.containsKey('premium');
   }
 }
 

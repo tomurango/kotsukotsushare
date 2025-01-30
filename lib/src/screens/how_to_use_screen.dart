@@ -48,9 +48,9 @@ class _HowToUseScreenState extends State<HowToUseScreen> {
         index: 1,
       ),
       _HowToUsePage(
-        imagePath: 'assets/images/how_to_use/others_log.png',
-        title: 'みんなの記録を見よう',
-        description: '他の人が公開設定にしているメモを見ることができます。\n\nメモを保存やコメント機能などを開発予定です。',
+        imagePath: 'assets/images/how_to_use/question_board_developing.jpeg',
+        title: '質問掲示板を準備中！',
+        description: '質問掲示板は、他のユーザーに質問を投稿し、回答をもらうことができる機能です。\n\n近日公開予定です。',
         index: 2,
       ),
     ];

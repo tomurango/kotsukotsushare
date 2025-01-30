@@ -45,6 +45,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
   DocumentSnapshot? _lastDocument; // 最後に取得したドキュメント
   int _pageSize = 20; // 1ページあたりの取得件数
 
+  /*
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -55,9 +56,23 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
       _initialize(); // 初期化処理を呼び出す
     }
   }
+  */
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    if (!_isInitializing && !_isInitialized && widget.isFirstAdvice) {
+      _isInitializing = true; // 先にフラグを変更して二重実行を防ぐ
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _initialize();
+      });
+    }
+  }
 
   Future<void> _initialize() async {
-    _isInitializing = true; // フラグを直接操作
+    // _isInitializing = true; // フラグを直接操作
     try {
       final isSubscribed = ref.read(subscriptionStatusProvider);
 
@@ -68,11 +83,22 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
         return; // 未課金なら初期化を中断
       }
 
+      ref.read(adviceNotifierProvider.notifier).updateAdvice(widget.memoId, 'AIアドバイスを取得中...');
+      setState(() {
+        _isSending = true; // 送信中フラグを立てる
+      });
+
       final advice = await _fetchAIAdvice(widget.memoContent);
       // _initialAdvice = advice;
 
       if (mounted) {
         ref.read(adviceNotifierProvider.notifier).updateAdvice(widget.memoId, advice);
+      }
+      // 🔹 成功した場合のみ、_isInitialized を true にする
+      if (mounted) {
+        setState(() {
+          _isInitialized = true;
+        });
       }
     } catch (e) {
       //_hasError = true; // エラー時の処理
@@ -81,7 +107,8 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
       if (mounted) {
         setState(() {
           _isInitializing = false; // 初期化完了
-          _isInitialized = true;  // 初期化完了フラグを設定
+          //_isInitialized = true;  // 初期化完了フラグを設定
+          _isSending = false; // 送信中フラグを解除
         });
       }
     }
@@ -148,6 +175,11 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
             Expanded(
               child: _buildChatStream(), // チャットのリスト
             ),
+            // 送信中のインジケーター
+            if (_isSending)
+              LinearProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.teal),
+              ),
             // メッセージ入力
             _buildMessageInput(),
           ],
@@ -246,14 +278,21 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
         return StreamBuilder<List<QueryDocumentSnapshot>>(
           stream: _watchNewData(lastTimestamp),
           builder: (context, newSnapshot) {
+            // sending要対応
             final newMessages = newSnapshot.data ?? [];
 
             // 初期データ + 新しいデータを統合
-            final combinedMessages = [
+            final allMessages = [
               ..._pastMessages, // 過去のメッセージ
               ...initialMessages, 
               ...newMessages
             ];
+
+            // Firestore のドキュメント ID をキーにして重複を排除
+            // 20件をinitialMessagesから取得しているため、元の件数が20以下だとnewMessagesと重複することへの対策
+            final uniqueMessagesMap = { for (var msg in allMessages) msg.id : msg };
+            // 重複を排除したリストに変換
+            final combinedMessages = uniqueMessagesMap.values.toList();
 
             // `createdAt`で昇順に並べ替え
             combinedMessages.sort((a, b) {

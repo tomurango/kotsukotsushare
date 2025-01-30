@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 
 class AIResponse extends StatelessWidget {
   final String message;
@@ -37,10 +38,22 @@ class AIResponse extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.all(16),
             child: SingleChildScrollView( // スクロール可能にする
+              // 回答メッセージはマークダウン対応
+              child: MarkdownBody(
+                data: message, // マークダウンとして解釈
+                styleSheet: MarkdownStyleSheet(
+                  p: const TextStyle(fontSize: 16), // 通常のテキスト
+                  strong: const TextStyle(fontWeight: FontWeight.bold), // **太字**
+                  em: const TextStyle(fontStyle: FontStyle.italic), // *斜体*
+                  code: const TextStyle(fontFamily: 'monospace', backgroundColor: Colors.grey), // `コード`
+                ),
+              ),
+              /*
               child: Text(
                 message,
                 style: const TextStyle(fontSize: 16),
               ),
+              */
             ),
           ),
         ),

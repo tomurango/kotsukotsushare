@@ -36,9 +36,8 @@ class SettingsScreen extends ConsumerWidget {
                 ),
               );
             } else if (isPremium) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text("すでにプレミアムプランをご利用中です")),
-              );
+              // プレミアムユーザーの場合、サブスク管理のDialogを表示
+              _showSubscriptionManagementDialog(context);
             }
           },
         ),
@@ -86,7 +85,9 @@ class SettingsScreen extends ConsumerWidget {
             _showSignOutDialog(context);
           },
         ),
-        Divider(),
+        Divider(
+          height: 0,
+        ),
         // お問い合わせ、利用規約、プライバシーポリシー
         ListTile(
           leading: Icon(Icons.contact_page),
@@ -189,4 +190,37 @@ class SettingsScreen extends ConsumerWidget {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("アカウント削除に失敗しました: $e")));
     }
   }
+}
+
+void _showSubscriptionManagementDialog(BuildContext context) {
+  showDialog(
+    context: context,
+    builder: (context) {
+      return AlertDialog(
+        title: Text("サブスクリプション管理"),
+        content: Text("プレミアムプランの管理や解約は、App Storeの設定から行えます。"),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context); // ダイアログを閉じる
+            },
+            child: Text("キャンセル"),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              const url = 'https://apps.apple.com/account/subscriptions';
+              if (await canLaunchUrl(Uri.parse(url))) {
+                await launchUrl(Uri.parse(url));
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text("サブスクリプション管理ページを開けませんでした")),
+                );
+              }
+            },
+            child: Text("サブスクリプションを管理する"),
+          ),
+        ],
+      );
+    },
+  );
 }

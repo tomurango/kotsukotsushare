@@ -53,9 +53,9 @@ void _initializeFirebaseFunctions() {
   final functions = FirebaseFunctions.instance;
 
   // デバッグモードでエミュレーターを使用
-  if (kDebugMode) {
-    functions.useFunctionsEmulator('localhost', 5001); // エミュレーター設定
-  }
+  //if (kDebugMode) {
+  //  functions.useFunctionsEmulator('localhost', 5001); // エミュレーター設定
+  //}
 }
 
 class MyApp extends StatelessWidget {
