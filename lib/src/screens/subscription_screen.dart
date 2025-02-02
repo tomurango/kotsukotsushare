@@ -9,6 +9,7 @@ class SubscriptionScreen extends StatefulWidget {
 
 class _SubscriptionScreenState extends State<SubscriptionScreen> {
   bool _isPurchasing = false; // 購入処理中フラグ
+  bool _isRestoring  = false; // 復元処理中フラグ
   bool _isSubscribed = false; // 購読状態
 
   @override
@@ -54,6 +55,40 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
       if (mounted) {
         setState(() {
           _isPurchasing = false; // ローディング解除
+        });
+      }
+    }
+  }
+
+  /// 購入の復元
+  Future<void> _handleRestorePurchase() async {
+    setState(() {
+      _isRestoring = true;
+    });
+
+    try {
+      final restoredInfo = await Purchases.restorePurchases();
+      if (restoredInfo.entitlements.active.containsKey('premium')) {
+        setState(() {
+          _isSubscribed = true;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('購入が復元されました！')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('有効な購入が見つかりませんでした。')),
+        );
+      }
+    } catch (e) {
+      print('Restore failed: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('購入の復元に失敗しました。')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isRestoring = false;
         });
       }
     }
@@ -111,6 +146,9 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
             _buildBenefits(),
             SizedBox(height: 24),
             _buildSubscriptionButton(),
+            SizedBox(height: 24),
+            _buildRestoreButton(),
+            SizedBox(height: 56),
           ],
         ),
       ),
@@ -195,7 +233,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
           padding: EdgeInsets.symmetric(horizontal: 64, vertical: 16),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
         ),
-        onPressed: (_isPurchasing || _isSubscribed) ? () {} : _handlePurchase,
+        onPressed: (_isPurchasing || _isSubscribed || _isRestoring) ? () {} : _handlePurchase,
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -206,6 +244,17 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
             Text(_isSubscribed ? "すでに登録済み" : "Premiumを始める", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildRestoreButton() {
+    return Center(
+      child: TextButton(
+        onPressed: (_isPurchasing || _isSubscribed || _isRestoring) ? () {} : _handleRestorePurchase,
+        child: _isRestoring
+            ? SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.teal, strokeWidth: 2.5))
+            : Text("購入を復元", style: TextStyle(fontSize: 16, color: Colors.teal)),
       ),
     );
   }
