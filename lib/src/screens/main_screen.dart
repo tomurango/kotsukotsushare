@@ -6,6 +6,8 @@ import 'question_board_screen.dart';
 import 'setting_screen.dart';
 import 'tutorial_screen.dart';
 import '../widgets/custom_bottom_app_bar.dart';
+import '../widgets/question/question_fab.dart';
+import '../widgets/question/question_bottom_sheet.dart';
 import '../providers/user_data_provider.dart';
 
 class MainScreen extends HookConsumerWidget {
@@ -50,6 +52,22 @@ class MainScreen extends HookConsumerWidget {
         onNavigate: (index) => selectedIndex.value = index,
         selectedIndex: selectedIndex.value,
       ),
+      floatingActionButton: selectedIndex.value == 1
+        ? Container(
+            margin: EdgeInsets.only(bottom: 70), // ← ここで高さを調整（30px 上に移動）
+            child: QuestionFAB(onNavigate: (index) => selectedIndex.value = index),
+          )
+        : null,
+      // 右下
+      floatingActionButtonLocation: FloatingActionButtonLocation.endDocked,
+      bottomSheet: selectedIndex.value == 1
+          ? ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.4, // 画面の40%まで
+              ),
+              child: QuestionBottomSheet(),
+            )
+          : null,
     );
   }
 
