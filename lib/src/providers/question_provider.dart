@@ -24,3 +24,6 @@ final showMyQuestionsProvider = StateProvider<bool>((ref) => true);
 
 // みんなの質問の表示トグル
 final showAllQuestionsProvider = StateProvider<bool>((ref) => true);
+
+// 表示する画面の状態を管理するProvider
+final selectedQuestionScreenProvider = StateProvider((ref) => 0); // 0: 質問一覧, 1: 質問入力画面

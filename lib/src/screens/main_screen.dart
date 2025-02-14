@@ -9,6 +9,7 @@ import '../widgets/custom_bottom_app_bar.dart';
 import '../widgets/question/question_fab.dart';
 import '../widgets/question/question_bottom_sheet.dart';
 import '../providers/user_data_provider.dart';
+import '../providers/question_provider.dart';
 
 class MainScreen extends HookConsumerWidget {
   @override
@@ -17,6 +18,7 @@ class MainScreen extends HookConsumerWidget {
 
     // チュートリアルのフラグを監視
     final userData = ref.watch(userDataProvider);
+    final selectedQuestionScreen = ref.watch(selectedQuestionScreenProvider);
 
     final pages = [
       MypageScreen(onNavigate: (index) => selectedIndex.value = index),
@@ -52,15 +54,16 @@ class MainScreen extends HookConsumerWidget {
         onNavigate: (index) => selectedIndex.value = index,
         selectedIndex: selectedIndex.value,
       ),
-      floatingActionButton: selectedIndex.value == 1
+      floatingActionButton: selectedIndex.value == 1 && selectedQuestionScreen == 0
         ? Container(
             margin: EdgeInsets.only(bottom: 70), // ← ここで高さを調整（30px 上に移動）
-            child: QuestionFAB(onNavigate: (index) => selectedIndex.value = index),
+            // child: QuestionFAB(onNavigate: (index) => selectedIndex.value = index),
+            child: QuestionFAB(),
           )
         : null,
       // 右下
       floatingActionButtonLocation: FloatingActionButtonLocation.endDocked,
-      bottomSheet: selectedIndex.value == 1
+      bottomSheet: selectedIndex.value == 1 && selectedQuestionScreen == 0
           ? ConstrainedBox(
               constraints: BoxConstraints(
                 maxHeight: MediaQuery.of(context).size.height * 0.4, // 画面の40%まで

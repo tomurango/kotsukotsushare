@@ -1,15 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../providers/question_provider.dart';
 
-class QuestionFAB extends StatelessWidget {
-  final void Function(int) onNavigate;
-
-  QuestionFAB({required this.onNavigate});
-
+class QuestionFAB extends ConsumerWidget {
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return FloatingActionButton.extended(
       onPressed: () {
-        onNavigate(1); // 質問作成画面へ遷移
+        ref.read(selectedQuestionScreenProvider.notifier).state = 1; // 質問入力画面に切り替え
       },
       icon: Icon(Icons.add),
       label: Text("質問を投稿する"),
