@@ -41,22 +41,11 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
   bool _hasMorePastData = true; // 更なるデータがあるかのフラグ
   bool _isSending = false; // 送信中かどうかのフラグ
   bool _showSubscriptionDialog = false; // ダイアログ表示フラグ
+  /* _isShowedSubscriptionDialogは仮の処理であり、Dialog表示後に初期化が再度実行している挙動が理解できていないので調査をするのが理想（一度フラグ_showSubscriptionDialogが変更されていればtrue） */
+  bool _isShowedSubscriptionDialog = false; // ダイアログが表示されたかどうかのフラグ
   List<QueryDocumentSnapshot> _pastMessages = []; // 過去のメッセージ
   DocumentSnapshot? _lastDocument; // 最後に取得したドキュメント
   int _pageSize = 20; // 1ページあたりの取得件数
-
-  /*
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-
-    // 初期化がまだの場合のみ実行
-    // if (!_isInitializing && !_isInitialized && widget.isFirstAdvice) {
-    if (!_isInitializing && widget.isFirstAdvice) {
-      _initialize(); // 初期化処理を呼び出す
-    }
-  }
-  */
 
   @override
   void didChangeDependencies() {
@@ -77,7 +66,8 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
       final isSubscribed = ref.read(subscriptionStatusProvider);
 
       if (!isSubscribed) {
-        if (!_isInitialized) {
+        if (!_isShowedSubscriptionDialog) {
+          _isShowedSubscriptionDialog = true; // ダイアログを表示するフラグをセット
           _showSubscriptionDialog = true; // ダイアログを表示するフラグをセット
         }
         return; // 未課金なら初期化を中断
