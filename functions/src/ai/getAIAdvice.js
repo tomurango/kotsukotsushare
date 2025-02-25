@@ -1,5 +1,5 @@
 const functions = require("firebase-functions");
-const { admin, Firestore, model } = require("../config");
+const { admin, Firestore, model } = require("../../config");
 
 exports.getAIAdvice = functions.https.onCall(async (data, context) => {
   try {

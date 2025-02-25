@@ -9,6 +9,9 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'firebase_options.dart';
 import 'src/auth_wrapper.dart';
 import 'package:flutter/foundation.dart';
+// Firebase Auth のエミュレーターを使用するためのインポート
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 void main() async {
   // 基本カラーをTeal色 (#008080) に設定
@@ -53,9 +56,14 @@ void _initializeFirebaseFunctions() {
   final functions = FirebaseFunctions.instance;
 
   // デバッグモードでエミュレーターを使用
-  //if (kDebugMode) {
-  //  functions.useFunctionsEmulator('localhost', 5001); // エミュレーター設定
-  //}
+  if (kDebugMode) {
+    // 🔥 エミュレーターを使っている場合、Auth のエミュレーターを設定
+    FirebaseAuth.instance.useAuthEmulator('localhost', 9099);
+    // 🔥 エミュレーターを使っている場合、Functions のエミュレーターを設定
+    functions.useFunctionsEmulator('localhost', 5001); // エミュレーター設定
+    // 🔥 エミュレーターを使っている場合、Firestore のエミュレーターを設定
+    FirebaseFirestore.instance.useFirestoreEmulator('localhost', 8080);
+  }
 }
 
 class MyApp extends StatelessWidget {

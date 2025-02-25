@@ -85,32 +85,43 @@ class QuestionBottomSheet extends ConsumerWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
-                    children: [
-                      TextButton.icon(
-                        onPressed: () =>
-                            ref.read(showMyQuestionsProvider.notifier).state = !showMyQuestions,
-                        icon: Icon(
-                          showMyQuestions ? Icons.check_box : Icons.check_box_outline_blank,
-                          color: showMyQuestions ? Colors.green : Colors.grey,
+                  Expanded( // 🔥 この Row を Expanded で囲む
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      children: [
+                        Expanded( // 🔥 ボタンごとに均等配置
+                          child: TextButton.icon(
+                            onPressed: () =>
+                                ref.read(showMyQuestionsProvider.notifier).state = !showMyQuestions,
+                            icon: Icon(
+                              showMyQuestions ? Icons.check_box : Icons.check_box_outline_blank,
+                              color: showMyQuestions ? Colors.green : Colors.grey,
+                            ),
+                            label: Text("自分の質問", overflow: TextOverflow.ellipsis), // 🔥 長すぎたら省略
+                          ),
                         ),
-                        label: Text("自分の質問"),
-                      ),
-                      TextButton.icon(
-                        onPressed: () =>
-                            ref.read(showAllQuestionsProvider.notifier).state = !showAllQuestions,
-                        icon: Icon(
-                          showAllQuestions ? Icons.check_box : Icons.check_box_outline_blank,
-                          color: showAllQuestions ? Colors.green : Colors.grey,
+                        Expanded(
+                          child: TextButton.icon(
+                            onPressed: () =>
+                                ref.read(showAllQuestionsProvider.notifier).state = !showAllQuestions,
+                            icon: Icon(
+                              showAllQuestions ? Icons.check_box : Icons.check_box_outline_blank,
+                              color: showAllQuestions ? Colors.green : Colors.grey,
+                            ),
+                            label: Text("みんなの質問", overflow: TextOverflow.ellipsis),
+                          ),
                         ),
-                        label: Text("みんなの質問"),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                  TextButton.icon(
+                  OutlinedButton(
                     onPressed: () => ref.read(isExpandedProvider.notifier).state = false,
-                    icon: Icon(Icons.arrow_drop_down),
-                    label: Text("閉じる"),
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: Size(32, 32), // 🔥 ボタンサイズを小さく
+                      padding: EdgeInsets.zero, // 🔥 内側の余白をなくす
+                      shape: CircleBorder(), // 🔥 丸ボタンにする
+                    ),
+                    child: Icon(Icons.keyboard_arrow_down, size: 18, color: Colors.grey),
                   ),
                 ],
               ),
