@@ -1,21 +1,16 @@
-const functions = require("firebase-functions");
-const admin = require("firebase-admin");
+const { getFirestore } = require("firebase-admin/firestore");
 
-exports.getMyQuestions = functions.https.onCall(async (data, context) => {
-  const userId = context.auth?.uid;
-  if (!userId) {
-    throw new functions.https.HttpsError("unauthenticated", "ログインが必要です。");
-  }
+const db = getFirestore();
 
-  const questionsSnapshot = await admin.firestore()
-      .collection("questions")
-      .where("createdBy", "==", userId)
-      .orderBy("timestamp", "desc")
-      .get();
+async function getMyQuestions(userId) {
+  const myQuestionsSnapshot = await db.collection("questions")
+    .where("createdBy", "==", userId)
+    .get();
 
-  return questionsSnapshot.docs.map(doc => ({
+  return myQuestionsSnapshot.docs.map(doc => ({
     id: doc.id,
     text: doc.data().text,
-    timestamp: doc.data().timestamp,
   }));
-});
+}
+
+module.exports = getMyQuestions;

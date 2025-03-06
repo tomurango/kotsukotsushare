@@ -5,60 +5,80 @@ import '../providers/question_provider.dart';
 
 class QuestionBoardScreen extends ConsumerWidget {
   final void Function(int) onNavigate;
-  
+
   QuestionBoardScreen({required this.onNavigate});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedQuestionIndex = ref.watch(selectedQuestionIndexProvider);
-    final questions = ref.watch(questionsProvider);
-    final selectedQuestionScreen = ref.watch(selectedQuestionScreenProvider); // 画面の状態を取得
-
-    // 選択中の質問が範囲外の場合は 0 にリセット
-    if (selectedQuestionIndex >= questions.length) {
-      Future.microtask(() => ref.read(selectedQuestionIndexProvider.notifier).state = 0);
-    }
+    final selectedQuestionScreen = ref.watch(selectedQuestionScreenProvider);
+    final questionState = ref.watch(questionsProvider); // ✅ `FutureProvider` を watch
 
     return Scaffold(
-    body: selectedQuestionScreen == 0
-        ? Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-                Text(
-                "質問:",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                SizedBox(height: 8),
-                Container(
-                padding: EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                    color: Colors.grey[200],
-                    borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                    questions[selectedQuestionIndex]["question"] ?? "質問なし",
-                    style: TextStyle(fontSize: 16),
-                ),
-                ),
-                SizedBox(height: 16),
-                Text(
-                "解答:",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                SizedBox(height: 8),
-                TextField(
-                decoration: InputDecoration(
-                    border: OutlineInputBorder(),
-                    hintText: "解答を入力してください",
-                ),
-                maxLines: 3,
-                ),
-            ],
-            ),
-        )
-        : QuestionInputScreen(),
+      body: questionState.when(
+        data: (questionsData) {
+          if (questionsData.isEmpty) {
+            return selectedQuestionScreen == 0
+                ? const Center(child: Text("現在、質問がありません"))
+                : QuestionInputScreen();
+          }
+
+          // ✅ `selectedQuestionIndex` が範囲外ならリセット
+          final validIndex = selectedQuestionIndex < questionsData.length ? selectedQuestionIndex : 0;
+          if (selectedQuestionIndex >= questionsData.length) {
+            Future.microtask(() =>
+                ref.read(selectedQuestionIndexProvider.notifier).state = 0);
+          }
+
+          return selectedQuestionScreen == 0
+              ? Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "質問:",
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[200],
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          questionsData[validIndex]["question"] ?? "質問なし",
+                          style: const TextStyle(fontSize: 16),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        "解答:",
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      const TextField(
+                        decoration: InputDecoration(
+                          border: OutlineInputBorder(),
+                          hintText: "解答を入力してください",
+                        ),
+                        maxLines: 3,
+                      ),
+                    ],
+                  ),
+                )
+              : QuestionInputScreen();
+        },
+        loading: () => const Center(child: CircularProgressIndicator()), // ✅ ローディング処理
+        error: (error, _) {
+          final errorMessage = error.toString().contains("質問がありません")
+              ? "現在、質問がありません"
+              : "エラーが発生しました";
+
+          return Center(child: Text(errorMessage));
+        },
+      ),
     );
   }
 }

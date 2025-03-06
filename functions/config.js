@@ -1,5 +1,5 @@
 const admin = require("firebase-admin");
-const { getFirestore, FieldValue } = require("firebase-admin/firestore");
+const { getFirestore, FieldValue, FieldPath } = require("firebase-admin/firestore");
 const { VertexAI } = require("@google-cloud/vertexai");
 const functions = require("firebase-functions");
 
@@ -32,7 +32,8 @@ const PERSPECTIVE_API_KEY = process.env.PERSPECTIVE_API_KEY;
 module.exports = {
   admin,
   db, // 🔥 Firestore インスタンスをエクスポート
-  FieldValue, // 🔥 これをエクスポート
+  FieldValue,
+  FieldPath,
   model,
   PERSPECTIVE_API_KEY,
 };

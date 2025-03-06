@@ -19,6 +19,7 @@ class MainScreen extends HookConsumerWidget {
     // チュートリアルのフラグを監視
     final userData = ref.watch(userDataProvider);
     final selectedQuestionScreen = ref.watch(selectedQuestionScreenProvider);
+    final isExpanded = ref.watch(isExpandedProvider); // 🔥 `bool` 値を取得
 
     final pages = [
       MypageScreen(onNavigate: (index) => selectedIndex.value = index),
@@ -54,7 +55,7 @@ class MainScreen extends HookConsumerWidget {
         onNavigate: (index) => selectedIndex.value = index,
         selectedIndex: selectedIndex.value,
       ),
-      floatingActionButton: selectedIndex.value == 1 && selectedQuestionScreen == 0
+      floatingActionButton: selectedIndex.value == 1 && selectedQuestionScreen == 0 && !isExpanded
         ? Container(
             margin: EdgeInsets.only(bottom: 70), // ← ここで高さを調整（30px 上に移動）
             // child: QuestionFAB(onNavigate: (index) => selectedIndex.value = index),
