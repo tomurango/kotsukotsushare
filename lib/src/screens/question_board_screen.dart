@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:collection/collection.dart';
 import 'question_input_screen.dart';
 import '../providers/question_provider.dart';
 import '../providers/answer_send_provider.dart';
-import '../widgets/question/question_answers_list.dart'; // 🔥 追加
+import '../providers/answers_provider.dart';
+import '../widgets/question/question_answers_list.dart';
 
 class QuestionBoardScreen extends ConsumerStatefulWidget {
   final void Function(int) onNavigate;
@@ -27,10 +29,18 @@ class _QuestionBoardScreenState extends ConsumerState<QuestionBoardScreen> {
     return Scaffold(
       body: questionState.when(
         data: (questionsData) {
+          if (selectedQuestionScreen == 1) {
+            return QuestionInputScreen();
+          }
           if (questionsData.isEmpty) {
-            return selectedQuestionScreen == 0
-                ? const Center(child: Text("現在、質問がありません"))
-                : QuestionInputScreen();
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text("質問がありません"),
+                ],
+              ),
+            );
           }
 
           final validIndex = selectedQuestionIndex < questionsData.length ? selectedQuestionIndex : 0;
@@ -40,6 +50,18 @@ class _QuestionBoardScreenState extends ConsumerState<QuestionBoardScreen> {
           }
 
           final questionId = questionsData[validIndex]["id"];
+
+          final answersAsync = ref.watch(answersProvider(questionId));
+
+          answersAsync.whenData((answers) {
+            final myAnswer = answers.firstWhereOrNull((a) => a["isMine"] == true);
+            final newText = myAnswer?["text"] ?? "";
+
+            if (_answerController.text != newText) {
+              _answerController.text = newText;
+            }
+          });
+
 
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16.0),
@@ -86,7 +108,7 @@ class _QuestionBoardScreenState extends ConsumerState<QuestionBoardScreen> {
                           if (_answerController.text.trim().isEmpty) return;
                           final success = await ref
                               .read(answerSubmitProvider.notifier)
-                              .submitAnswer(questionId, _answerController.text.trim());
+                              .submitAnswer(questionId, questionsData[validIndex]["question"],_answerController.text.trim());
 
                           if (success) {
                             _answerController.clear();
@@ -101,12 +123,13 @@ class _QuestionBoardScreenState extends ConsumerState<QuestionBoardScreen> {
                         },
                   child: isSubmitting
                       ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text("回答を送信"),
+                      : const Text("考えを質問者へ伝える"),
                 ),
                 const SizedBox(height: 16),
 
                 // 🔥 回答リストを表示（別ウィジェット）
-                QuestionAnswersList(questionId: questionId),
+                QuestionAnswersList(),
+                //QuestionAnswersList(questionId: questionId),
               ],
             ),
           );

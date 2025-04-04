@@ -139,6 +139,12 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
                           curve: Curves.easeInOut,
                         );
                       },
+                      style: TextButton.styleFrom(
+                        backgroundColor: _currentPage == 0
+                            ? Colors.black.withOpacity(0.3) // 薄暗い背景を追加
+                            : Colors.transparent, // それ以外は透明
+                        
+                      ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min, // 子ウィジェットの幅に合わせる
                         children: [

@@ -16,7 +16,7 @@ exports.getAIAdvice = functions.https.onCall(async (data, context) => {
     let request = {};
     if (pastMessages.length === 0) {
       request = {
-        systemInstruction: "これは最初のメッセージです。このメモの内容についてアドバイスしてください。",
+        systemInstruction: "これは大切だと思うことについてのメモです。内容についてアドバイスしてください。",
         contents: [{ role: "user", parts: [{ text: userMessage }] }],
       };
     } else {

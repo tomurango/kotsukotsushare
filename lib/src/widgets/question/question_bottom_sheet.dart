@@ -6,8 +6,6 @@ class QuestionBottomSheet extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isExpanded = ref.watch(isExpandedProvider);
-    final showMyQuestions = ref.watch(showMyQuestionsProvider);
-    final showAllQuestions = ref.watch(showAllQuestionsProvider);
     final selectedQuestionIndexNotifier = ref.read(selectedQuestionIndexProvider.notifier);
     final selectedQuestionIndex = ref.watch(selectedQuestionIndexProvider);
     final questionState = ref.watch(questionsProvider);

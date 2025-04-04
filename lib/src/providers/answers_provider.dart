@@ -5,6 +5,13 @@ import 'package:cloud_functions/cloud_functions.dart';
 final answersProvider = FutureProvider.family<List<Map<String, dynamic>>, String>((ref, questionId) async {
   final callable = FirebaseFunctions.instance.httpsCallable('getAnswers');
   final response = await callable.call({"questionId": questionId});
+  // 🔥 Cloud Functions からのレスポンスを確認
+  print("🔥 Cloud Functions Response: ${response.data}");
+  
+  if (response.data == null || response.data["answers"] == null) {
+    print("❌ No answers found for questionId: $questionId");
+    return [];
+  }
 
   // 🔥 Cloud Functions から受け取ったデータを `List<Map<String, dynamic>>` に変換
   List<Map<String, dynamic>> convertedData = [];

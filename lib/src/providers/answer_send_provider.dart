@@ -8,11 +8,11 @@ final answerSubmitStateProvider = StateProvider<bool>((ref) => false);
 class AnswerSubmitNotifier extends StateNotifier<bool> {
   AnswerSubmitNotifier() : super(false);
 
-  Future<bool> submitAnswer(String questionId, String answerText) async {
+  Future<bool> submitAnswer(String questionId, String questionText, String answerText) async {
     state = true; // 🔥 送信中状態にする
     try {
       final callable = FirebaseFunctions.instance.httpsCallable('addAnswer');
-      await callable.call({"questionId": questionId, "answerText": answerText});
+      await callable.call({"questionId": questionId, "questionText": questionText, "answerText": answerText});
       return true; // 🔥 成功
     } catch (e) {
       print("❌ 回答の送信に失敗: $e");
