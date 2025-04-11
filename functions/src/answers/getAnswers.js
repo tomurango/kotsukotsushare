@@ -64,7 +64,7 @@ exports.getAnswers = onCall(async (request) => {
   });
 
   const answers = mergedAnswers.map(doc => ({
-    id: doc.id,
+    // id: doc.id,
     text: doc.data().text,
     isMine: doc.data().createdBy === request.auth.uid,
   }));  

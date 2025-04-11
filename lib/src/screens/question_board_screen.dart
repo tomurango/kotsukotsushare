@@ -51,16 +51,15 @@ class _QuestionBoardScreenState extends ConsumerState<QuestionBoardScreen> {
 
           final questionId = questionsData[validIndex]["id"];
 
-          final answersAsync = ref.watch(answersProvider(questionId));
+          final cachedAnswers = ref.watch(cachedAnswersProvider)[questionId] ?? [];
 
-          answersAsync.whenData((answers) {
-            final myAnswer = answers.firstWhereOrNull((a) => a["isMine"] == true);
-            final newText = myAnswer?["text"] ?? "";
+          final myAnswer = cachedAnswers.firstWhereOrNull((a) => a["isMine"] == true);
+          final newText = myAnswer?["text"] ?? "";
 
-            if (_answerController.text != newText) {
-              _answerController.text = newText;
-            }
-          });
+          if (_answerController.text != newText) {
+            _answerController.text = newText;
+          }
+
 
 
           return SingleChildScrollView(
@@ -111,7 +110,24 @@ class _QuestionBoardScreenState extends ConsumerState<QuestionBoardScreen> {
                               .submitAnswer(questionId, questionsData[validIndex]["question"],_answerController.text.trim());
 
                           if (success) {
-                            _answerController.clear();
+                            // _answerController.clear();
+                            final newAnswer = {
+                              "text": _answerController.text.trim(),
+                              "isMine": true,
+                            };
+
+                            // 今あるキャッシュを取得
+                            final previousAnswers = ref.read(cachedAnswersProvider)[questionId] ?? [];
+
+                            // 更新したリストを生成（すでに自分の回答があるなら上書き、なければ追加）
+                            final updatedAnswers = [
+                              ...previousAnswers.where((a) => a["isMine"] != true),
+                              newAnswer,
+                            ];
+
+                            // キャッシュを更新
+                            ref.read(cachedAnswersProvider.notifier).updateAnswers(questionId, updatedAnswers);
+                            
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(content: Text("回答を送信しました！")),
                             );

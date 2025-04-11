@@ -81,18 +81,12 @@ exports.addAnswer = onCall(async (request) => {
         status,
       });
 
+    // 🔥 お気に入り（回答済み）として保存
+    await db.collection("users").doc(userId).set({
+      favoriteQuestions: FieldValue.arrayUnion(questionId)
+    }, { merge: true });
+
     return { message: "回答を追加しました" };
-    /*return {
-      message: reviewRequired
-        ? "内容に問題の可能性があるため確認が必要です"
-        : "回答を追加しました",
-      toxicity,
-      aiResult,
-      reviewRequired,
-    };*/
-
-
-
   } catch (error) {
     console.error("❌ 回答の追加に失敗:", error);
     throw new functions.https.HttpsError("internal", error.message || "Internal server error");

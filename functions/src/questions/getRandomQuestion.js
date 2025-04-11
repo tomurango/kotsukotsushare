@@ -15,41 +15,46 @@ async function getRandomQuestion(userId) {
   const answeredQuestions = userData?.answeredQuestions || [];
   const favoriteQuestions = userData?.favoriteQuestions || [];
 
-  let excludedQuestions = [...new Set([...answeredQuestions, ...favoriteQuestions])];
+  const excludedQuestions = [...new Set([...answeredQuestions, ...favoriteQuestions])];
 
-  let query = db.collection("questions")
-    .where("createdBy", "!=", userId);
+  // Firestore のクエリ制限により、'not-in' を1つだけ使う
+  let query = db.collection("questions");
 
-  if (blockedUsers.length > 0) {
-    query = query.where("createdBy", "not-in", blockedUsers);
-  }
-
+  // ❗ 'not-in' は最大10件まで
   if (excludedQuestions.length > 0) {
-    query = query.where(FieldPath.documentId(), "not-in", excludedQuestions);
+    query = query.where(FieldPath.documentId(), "not-in", excludedQuestions.slice(0, 10));
   }
 
-  // 🔥 ランダムな閾値を作成
+  // 🔥 ランダムな閾値
   const randomThreshold = Math.random();
 
-  // 🔥 `random` フィールドが `randomThreshold` 以上のデータを取得
+  // ランダムに質問を取得（上方向）
   let questionsSnapshot = await query
     .where("random", ">=", randomThreshold)
     .orderBy("random")
-    .limit(1)
+    .limit(10) // 多めに取ってあとで JS 側でフィルタ
     .get();
 
-  // 🔥 もし質問がなければ、`random` フィールドが `randomThreshold` 以下のデータを取得
+  // 質問がなければ下方向へスキャン
   if (questionsSnapshot.empty) {
     questionsSnapshot = await query
       .where("random", "<", randomThreshold)
       .orderBy("random")
-      .limit(1)
+      .limit(10)
       .get();
   }
 
-  if (questionsSnapshot.empty) return null; // 最終的にデータがない場合
+  if (questionsSnapshot.empty) return null;
 
-  const question = questionsSnapshot.docs[0];
+  // ❗ JavaScript 側でフィルタリング
+  const filteredDocs = questionsSnapshot.docs.filter(doc => {
+    const createdBy = doc.data().createdBy;
+    return createdBy !== userId && !blockedUsers.includes(createdBy);
+  });
+
+  if (filteredDocs.length === 0) return null;
+
+  const question = filteredDocs[0];
 
   return {
     id: question.id,
