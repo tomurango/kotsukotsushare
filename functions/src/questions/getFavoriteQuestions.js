@@ -16,10 +16,13 @@ async function getFavoriteQuestions(userId) {
     .where("__name__", "in", favoriteQuestions)
     .get();
 
-  return questionsSnapshot.docs.map(doc => ({
-    id: doc.id,
-    text: doc.data().text,
-  }));
+   // 🔥 自分の投稿を除外
+   const filtered = questionsSnapshot.docs.filter(doc => doc.data().createdBy !== userId);
+
+   return filtered.map(doc => ({
+     id: doc.id,
+     text: doc.data().text,
+   }));
 }
 
 module.exports = getFavoriteQuestions;

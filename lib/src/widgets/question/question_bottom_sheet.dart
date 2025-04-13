@@ -96,20 +96,6 @@ class QuestionBottomSheet extends ConsumerWidget {
                             child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              /*
-                                if (selectedQuestionIndex == newIndex) ...[
-                                Icon(Icons.check_circle, color: Colors.white, size: 18), // 🔥 選択中のアイコンを追加
-                                SizedBox(width: 6),
-                                ],
-                                */
-                                /*Text(
-                                question["question"] ?? "質問なし",
-                                style: TextStyle(
-                                    fontSize: 14, // 🔹 文字サイズを微調整
-                                    fontWeight: FontWeight.bold, // 🔹 文字を少し太く
-                                    color: selectedQuestionIndex == newIndex ? Colors.white : Colors.black,
-                                ),
-                                ),*/
                               Text(
                                 (question["question"] ?? "質問なし").toString().length > 10
                                     ? (question["question"] as String).substring(0, 10) + "..."
@@ -169,7 +155,7 @@ class QuestionBottomSheet extends ConsumerWidget {
                       return Container(
                         margin: EdgeInsets.symmetric(vertical: 4, horizontal: 8),
                         decoration: BoxDecoration(
-                            color: selectedQuestionIndex == index ? Color(0xFF008080) : Colors.grey[200],
+                            color: selectedQuestionIndex == index ? Color(0xFF006666) : Colors.grey[200],
                             borderRadius: BorderRadius.circular(12),
                             boxShadow: selectedQuestionIndex == index
                                 ? [BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(2, 2))]
@@ -184,9 +170,6 @@ class QuestionBottomSheet extends ConsumerWidget {
                                 color: selectedQuestionIndex == index ? Colors.white : Colors.black87,
                             ),
                             ),
-                            /*leading: selectedQuestionIndex == index
-                                ? Icon(Icons.check_circle, color: Colors.white)
-                                : null,*/
                             trailing: _buildQuestionTypeChip(question["type"]), // 🔹 チップを追加
                             onTap: () => selectedQuestionIndexNotifier.state = index,
                         ),
