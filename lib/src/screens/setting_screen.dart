@@ -7,6 +7,7 @@ import 'package:purchases_flutter/purchases_flutter.dart';
 import 'tutorial_screen.dart';
 import 'how_to_use_screen.dart';
 import 'subscription_screen.dart';
+import 'blocked_questions_screen.dart';
 import '../providers/subscription_status_notifier.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -73,6 +74,21 @@ class SettingsScreen extends ConsumerWidget {
             );
           },
         ),
+        Divider(height: 0),
+        ListTile(
+          leading: Icon(Icons.block),
+          title: Text('ブロック済み質問一覧'),
+          subtitle: Text('ブロックした投稿者の質問を確認・解除できます'),
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => const BlockedQuestionsScreen(),
+              ),
+            );
+          },
+        ),
+
+
         Divider(
           height: 0,
         ),

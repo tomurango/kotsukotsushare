@@ -1,4 +1,5 @@
 const { getFirestore } = require("firebase-admin/firestore");
+const getBlockedUsers = require("../utils/getBlockedUsers");
 
 const db = getFirestore();
 
@@ -17,9 +18,9 @@ async function getFavoriteQuestions(userId) {
     .get();
 
    // 🔥 自分の投稿を除外
-   const filtered = questionsSnapshot.docs.filter(doc => doc.data().createdBy !== userId);
+   const mineFiltered = questionsSnapshot.docs.filter(doc => doc.data().createdBy !== userId);
 
-   return filtered.map(doc => ({
+   return mineFiltered.map(doc => ({
      id: doc.id,
      text: doc.data().text,
    }));

@@ -7,7 +7,14 @@ async function getBlockedUsers(userId) {
     throw new Error("unauthenticated", "ログインが必要です。");
   }
 
-  const blockedUsersSnapshot = await db.collection(`users/${userId}/blockedUsers`).get();
+  const blockedUsersSnapshot = await db
+    .collection("users")
+    .doc(userId)
+    .collection("blockedUsers")
+    .get();
+  if (blockedUsersSnapshot.empty) {
+    return [];
+  }
   return blockedUsersSnapshot.docs.map(doc => doc.id);
 }
 

@@ -8,6 +8,7 @@ import 'tutorial_screen.dart';
 import '../widgets/custom_bottom_app_bar.dart';
 import '../widgets/question/question_fab.dart';
 import '../widgets/question/question_bottom_sheet.dart';
+import '../widgets/question/question_appbar_menu.dart';
 import '../providers/user_data_provider.dart';
 import '../providers/question_provider.dart';
 
@@ -23,7 +24,6 @@ class MainScreen extends HookConsumerWidget {
 
     final pages = [
       MypageScreen(onNavigate: (index) => selectedIndex.value = index),
-      //ReflectionScreen(onNavigate: (index) => selectedIndex.value = index),
       QuestionBoardScreen(onNavigate: (index) => selectedIndex.value = index),
       SettingsScreen(onNavigate: (index) => selectedIndex.value = index),
     ];
@@ -49,6 +49,9 @@ class MainScreen extends HookConsumerWidget {
             color: Colors.white,
           ),
         ),
+        actions: selectedIndex.value == 1 && selectedQuestionScreen == 0 // 質問掲示板のときだけ表示
+          ? const [QuestionAppBarMenu()]
+          : null,
       ),
       body: pages[selectedIndex.value],
       bottomNavigationBar: CustomBottomAppBar(
@@ -57,8 +60,7 @@ class MainScreen extends HookConsumerWidget {
       ),
       floatingActionButton: selectedIndex.value == 1 && selectedQuestionScreen == 0 && !isExpanded
         ? Container(
-            margin: EdgeInsets.only(bottom: 70), // ← ここで高さを調整（30px 上に移動）
-            // child: QuestionFAB(onNavigate: (index) => selectedIndex.value = index),
+            margin: EdgeInsets.only(bottom: 70), // ← ここで高さを調整（30px 上に移動
             child: QuestionFAB(),
           )
         : null,
