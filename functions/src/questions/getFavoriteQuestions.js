@@ -1,5 +1,4 @@
 const { getFirestore } = require("firebase-admin/firestore");
-const getBlockedUsers = require("../utils/getBlockedUsers");
 
 const db = getFirestore();
 

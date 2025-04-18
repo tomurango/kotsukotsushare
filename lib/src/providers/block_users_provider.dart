@@ -1,3 +1,6 @@
+/* 個人の特定につながるので、フロントではなく、バックエンドでブロックユーザーを管理する。
+現状使用していないはずだが問題がなければ、削除する
+  
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -24,3 +27,4 @@ final blockedUsersProvider = StreamProvider<List<String>>((ref) {
       .snapshots()
       .map((snapshot) => snapshot.docs.map((doc) => doc.id).toList());
 });
+*/

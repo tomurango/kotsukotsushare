@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_functions/cloud_functions.dart';
+import 'auth_provider.dart';
 
+/*
 // 🔹 ダミーデータ（mock data）
 final List<Map<String, dynamic>> mockQuestions = [
   {"id": "hoge1", "question": "Flutterで状態管理は何が良い？", "type": "random"},
@@ -20,12 +22,35 @@ final questionsMockProvider = FutureProvider<List<Map<String, dynamic>>>((ref) a
   await Future.delayed(Duration(milliseconds: 500)); // 🔹 500ms の遅延を入れる（実際の API に近づける）
   return mockQuestions;
 });
+*/
 
+/*
 final questionsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
   final callable = FirebaseFunctions.instance.httpsCallable('getQuestions');
   final response = await callable.call();
 
-  // 🔥 `List<Object?>` から `List<Map<String, dynamic>>` に変換
+  List<Map<String, dynamic>> convertedData = [];
+
+  for (var item in response.data) {
+    if (item is Map) {
+      final convertedItem = Map<String, dynamic>.from(item);
+      convertedData.add(convertedItem);
+    } else {
+      print("❌ Unexpected item type: ${item.runtimeType} - $item");
+    }
+  }
+
+  return convertedData;
+});
+*/
+
+final questionsProvider = FutureProvider.autoDispose<List<Map<String, dynamic>>>((ref) async {
+  final user = ref.watch(authStateProvider).value;
+  if (user == null) return [];
+
+  final callable = FirebaseFunctions.instance.httpsCallable('getQuestions');
+  final response = await callable.call();
+
   List<Map<String, dynamic>> convertedData = [];
 
   for (var item in response.data) {

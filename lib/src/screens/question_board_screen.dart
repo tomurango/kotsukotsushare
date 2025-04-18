@@ -26,6 +26,10 @@ class _QuestionBoardScreenState extends ConsumerState<QuestionBoardScreen> {
     final questionState = ref.watch(questionsProvider);
     final isSubmitting = ref.watch(answerSubmitStateProvider);
 
+    // 質問が自分のものであるかどうか
+    final questionsData = questionState.asData?.value ?? [];
+    final isMine = questionsData.isNotEmpty && questionsData[selectedQuestionIndex]["type"] == "my";
+
     return questionState.when(
       data: (questionsData) {
         if (selectedQuestionScreen == 1) {
@@ -138,9 +142,15 @@ class _QuestionBoardScreenState extends ConsumerState<QuestionBoardScreen> {
                           );
                         }
                       },
-                child: isSubmitting
+                /*child: isSubmitting
                     ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text("考えを質問者へ伝える"),
+                    : const Text("考えを質問者へ伝える"),*/
+                child: isSubmitting
+                  ? const CircularProgressIndicator(color: Colors.white)
+                  : Text(
+                      isMine ? "自分の考えを記録する" : "考えを質問者へ伝える",
+                    ),
+
               ),
               const SizedBox(height: 16),
 

@@ -6,6 +6,7 @@ const { addAnswer } = require("./src/answers/addAnswer");
 const { blockUserByQuestionId } = require("./src/block/blockUserByQuestionId");
 const { unblockUserByQuestionId } = require("./src/block/unblockUserByQuestionId");
 const { getBlockedQuestions } = require("./src/block/getBlockedQuestions");
+const { reportQuestion } = require("./src/questions/reportQuestion");
 
 exports.getAIAdvice = getAIAdvice;
 exports.addQuestion = addQuestion;
@@ -15,3 +16,4 @@ exports.addAnswer = addAnswer;
 exports.blockUserByQuestionId = blockUserByQuestionId;
 exports.unblockUserByQuestionId = unblockUserByQuestionId;
 exports.getBlockedQuestions = getBlockedQuestions;
+exports.reportQuestion = reportQuestion;

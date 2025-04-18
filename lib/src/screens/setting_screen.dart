@@ -9,6 +9,7 @@ import 'how_to_use_screen.dart';
 import 'subscription_screen.dart';
 import 'blocked_questions_screen.dart';
 import '../providers/subscription_status_notifier.dart';
+import '../providers/resetAppState.dart';
 
 class SettingsScreen extends ConsumerWidget {
   final Function(int) onNavigate;
@@ -98,7 +99,7 @@ class SettingsScreen extends ConsumerWidget {
           title: Text('サインアウト'),
           subtitle: Text('現在ログインしているメールアドレス (${user?.email ?? ''}) からサインアウトします'),
           onTap: () {
-            _showSignOutDialog(context);
+            _showSignOutDialog(context, ref);
           },
         ),
         Divider(
@@ -138,7 +139,7 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   // サインアウト確認ダイアログを表示
-  void _showSignOutDialog(BuildContext context) {
+  void _showSignOutDialog(BuildContext context, WidgetRef ref) {
     showDialog(
       context: context,
       builder: (context) {
@@ -155,6 +156,8 @@ class SettingsScreen extends ConsumerWidget {
             TextButton(
               child: Text('サインアウト'),
               onPressed: () {
+                resetAppState(ref);
+
                 FirebaseAuth.instance.signOut(); // サインアウト処理
                 Navigator.of(context).pop(); // ダイアログを閉じる
               },

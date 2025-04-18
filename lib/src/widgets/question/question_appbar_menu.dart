@@ -22,9 +22,12 @@ class QuestionAppBarMenu extends ConsumerWidget {
         final isMine = question["type"] == "my";
         final questionId = question["id"];
 
-        return PopupMenuButton<String>(
+        return isMine
+            ? const SizedBox.shrink()
+            : PopupMenuButton<String>(
             icon: Icon(
-                isMine ? Icons.edit_note : Icons.more_vert,
+                // isMine ? Icons.edit_note : Icons.more_vert,
+                Icons.more_vert,
                 color: Colors.white,
             ),
             tooltip: isMine ? "投稿の操作" : "このユーザーに関する操作", // ← Tooltipで補足
@@ -73,7 +76,9 @@ class QuestionAppBarMenu extends ConsumerWidget {
                         ),
                     );
                     break;
-
+                case 'report':
+                    showReportDialog(context, questionId);
+                    break;
                 }
             },
             itemBuilder: (context) {
@@ -84,7 +89,8 @@ class QuestionAppBarMenu extends ConsumerWidget {
                 ];
                 } else {
                 return [
-                    const PopupMenuItem(value: 'block', child: Text('この質問の投稿者をブロック')),
+                    const PopupMenuItem(value: 'block', child: Text('この質問をブロック')),
+                    const PopupMenuItem(value: 'report', child: Text('通報する')),
                 ];
                 }
             },
@@ -93,6 +99,69 @@ class QuestionAppBarMenu extends ConsumerWidget {
       },
       loading: () => const SizedBox(),
       error: (_, __) => const SizedBox(),
+    );
+  }
+
+  void showReportDialog(BuildContext context, String questionId) {
+    final TextEditingController reasonController = TextEditingController();
+
+    showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+        title: const Text("通報の確認"),
+        content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+            const Text("この質問を通報しますか？"),
+            const SizedBox(height: 12),
+            TextField(
+                controller: reasonController,
+                maxLines: 3,
+                decoration: const InputDecoration(
+                hintText: "通報理由を入力してください",
+                border: OutlineInputBorder(),
+                ),
+            ),
+            ],
+        ),
+        actions: [
+            TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("キャンセル"),
+            ),
+            TextButton(
+            onPressed: () async {
+                final messenger = ScaffoldMessenger.of(context);
+                final reason = reasonController.text.trim();
+                Navigator.pop(context); // 先に閉じる
+
+                if (reason.isEmpty) {
+                messenger.showSnackBar(
+                    const SnackBar(content: Text("理由を入力してください")),
+                );
+                return;
+                }
+
+                try {
+                final callable = FirebaseFunctions.instance.httpsCallable("reportQuestion");
+                await callable.call({
+                    "questionId": questionId,
+                    "reason": reason,
+                });
+
+                messenger.showSnackBar(
+                    const SnackBar(content: Text("通報が送信されました")),
+                );
+                } catch (e) {
+                messenger.showSnackBar(
+                    SnackBar(content: Text("エラー: $e")),
+                );
+                }
+            },
+            child: const Text("通報する", style: TextStyle(color: Colors.red)),
+            ),
+        ],
+        ),
     );
   }
 }
