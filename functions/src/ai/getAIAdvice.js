@@ -1,7 +1,9 @@
 const functions = require("firebase-functions");
-const { admin, Firestore, model } = require("../../config");
+// const { admin, Firestore, model } = require("../../config");
+const { admin, FieldValue, model } = require("../../config");
 
-exports.getAIAdvice = functions.https.onCall(async (data, context) => {
+
+exports.getAIAdvice = functions.https.onCall(async (data) => {
   try {
     const userMessage = data.data.userMessage || "";
     const pastMessages = data.data.pastMessages || [];
@@ -37,7 +39,10 @@ exports.getAIAdvice = functions.https.onCall(async (data, context) => {
     
     if (!response.response || !response.response.candidates || response.response.candidates.length === 0) {
       console.error("Gemini API Response is invalid or empty:", response);
-      throw new Error("Gemini APIから有効な候補が返されませんでした。");
+      throw new functions.https.HttpsError(
+        "internal",
+        "Gemini APIから有効な候補が返されませんでした。"
+      );
     }
 
     const firestorePath = `users/${userId}/cards/${cardId}/memos/${memoId}/advices`;
@@ -47,7 +52,7 @@ exports.getAIAdvice = functions.https.onCall(async (data, context) => {
       await firestoreRef.add({
         content: userMessage,
         isAI: false,
-        createdAt: Firestore.FieldValue.serverTimestamp()
+        createdAt: FieldValue.serverTimestamp()
       });
     }
 
@@ -56,7 +61,7 @@ exports.getAIAdvice = functions.https.onCall(async (data, context) => {
     await firestoreRef.add({
       content: aiResponse,
       isAI: true,
-      createdAt: Firestore.FieldValue.serverTimestamp()
+      createdAt: FieldValue.serverTimestamp()
     });
 
     return aiResponse || "";
