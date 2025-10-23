@@ -8,7 +8,9 @@ async function getRandomQuestion(userId) {
 
   const userDoc = await db.collection("users").doc(userId).get();
   if (!userDoc.exists) {
-    throw new Error("not-found", "ユーザー情報が見つかりません。");
+    // ユーザードキュメントが存在しない場合は空データとして扱う
+    console.log(`User document not found for ${userId}, treating as new user`);
+    return null;
   }
 
   const userData = userDoc.data();

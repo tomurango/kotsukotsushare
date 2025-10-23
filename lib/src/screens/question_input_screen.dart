@@ -33,10 +33,13 @@ class _QuestionInputScreenState extends ConsumerState<QuestionInputScreen> {
   void _submitQuestion() async {
     if (_questionController.text.isEmpty) return;
 
+    // 確認ダイアログ
+    final confirmed = await _showConfirmationDialog();
+    if (!confirmed) return;
+
     Map<String, dynamic>? response = await addQuestion(_questionController.text);
 
     if (response != null) {
-      String status = response['status'];
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('質問を投稿しました！')),
       );
@@ -47,6 +50,26 @@ class _QuestionInputScreenState extends ConsumerState<QuestionInputScreen> {
         SnackBar(content: Text('質問の投稿に失敗しました。')),
       );
     }
+  }
+
+  Future<bool> _showConfirmationDialog() async {
+    return await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('質問投稿'),
+        content: Text('この質問を投稿しますか？'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text('キャンセル'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text('投稿する'),
+          ),
+        ],
+      ),
+    ) ?? false;
   }
 
   @override
@@ -69,7 +92,7 @@ class _QuestionInputScreenState extends ConsumerState<QuestionInputScreen> {
               border: OutlineInputBorder(),
               hintText: "質問を入力してください",
             ),
-            maxLines: 3,
+            maxLines: 5,
           ),
           SizedBox(height: 16),
           Row(
@@ -86,7 +109,7 @@ class _QuestionInputScreenState extends ConsumerState<QuestionInputScreen> {
               ElevatedButton(
                 onPressed: isButtonActive ? _submitQuestion : null, // 入力があるときだけ有効
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: isButtonActive ? Colors.blue : Colors.grey,
+                  backgroundColor: isButtonActive ? Color(0xFF008080) : Colors.grey,
                   foregroundColor: Colors.white,
                 ),
                 child: Text("質問を投稿"),
@@ -107,14 +130,8 @@ class _QuestionInputScreenState extends ConsumerState<QuestionInputScreen> {
         return null;
       }
 
-      // print("ログイン中: ${currentUser.uid}");
-
-      // 🔥 FirebaseAuth のトークンを取得
-      String? idToken = await currentUser.getIdToken();
-
       final functions = FirebaseFunctions.instance;
       final HttpsCallable callable = functions.httpsCallable('addQuestion');
-
 
       final response = await callable.call({
         'question': question,

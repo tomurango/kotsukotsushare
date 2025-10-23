@@ -1,4 +1,4 @@
-const { onCall } = require("firebase-functions/v2/https");
+const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const getRandomQuestion = require("./getRandomQuestion");
 const getMyQuestions = require("./getMyQuestions");
 const getFavoriteQuestions = require("./getFavoriteQuestions");
@@ -8,7 +8,7 @@ exports.getQuestions = onCall(async (request) => {
   try {
     const userId = request.auth?.uid;
     if (!userId) {
-      throw new Error("unauthenticated", "ログインが必要です。");
+      throw new HttpsError("unauthenticated", "ログインが必要です。");
     }
 
     // 各質問の取得
@@ -31,6 +31,6 @@ exports.getQuestions = onCall(async (request) => {
     return formattedQuestions;
   } catch (error) {
     console.error("Error fetching questions:", error);
-    throw new Error("internal", "エラーが発生しました。");
+    throw new HttpsError("internal", "エラーが発生しました。");
   }
 });

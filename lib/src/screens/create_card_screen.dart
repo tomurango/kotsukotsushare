@@ -1,21 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../providers/auth_provider.dart';
+import '../providers/local_data_provider.dart';
 
-class CreateCardScreen extends HookWidget {
+class CreateCardScreen extends HookConsumerWidget {
   final String title;
   final String category;
 
   CreateCardScreen({required this.title, required this.category});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final titleController = useTextEditingController();
     final descriptionController = useTextEditingController();
 
     void saveCard() async {
       final user = FirebaseAuth.instance.currentUser;
+      final useLocal = ref.read(useLocalDataProvider);
+      final localDataService = ref.read(localDataServiceProvider);
 
       // バリデーション
       if (titleController.text.isEmpty || descriptionController.text.isEmpty) {
@@ -27,16 +32,31 @@ class CreateCardScreen extends HookWidget {
 
       if (user != null) {
         try {
-          await FirebaseFirestore.instance
-              .collection('users')
-              .doc(user.uid)
-              .collection('cards')
-              .add({
-            'title': titleController.text,
-            'description': descriptionController.text,
-            'category': category,
-            'createdAt': Timestamp.now(),
-          });
+          final cardId = FirebaseFirestore.instance.collection('temp').doc().id;
+          final card = CardData(
+            id: cardId,
+            title: titleController.text,
+            description: descriptionController.text,
+            category: category,
+          );
+
+          if (useLocal) {
+            // ローカルデータを使用する場合
+            await localDataService.addCard(card);
+          } else {
+            // Firestoreを使用する場合
+            await FirebaseFirestore.instance
+                .collection('users')
+                .doc(user.uid)
+                .collection('cards')
+                .doc(cardId)
+                .set({
+              'title': titleController.text,
+              'description': descriptionController.text,
+              'category': category,
+              'createdAt': Timestamp.now(),
+            });
+          }
 
           titleController.clear();
           descriptionController.clear();

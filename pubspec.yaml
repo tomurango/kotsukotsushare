@@ -54,6 +54,9 @@ dependencies:
   flutter_markdown: ^0.7.5
   collection: ^1.18.0
   fl_chart: ^0.71.0
+  sqflite: ^2.3.0
+  path: ^1.8.3
+  shared_preferences: ^2.2.0
 
 
   # The following adds the Cupertino Icons font to your application.

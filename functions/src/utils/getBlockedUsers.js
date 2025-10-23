@@ -4,7 +4,9 @@ const db = getFirestore();
 
 async function getBlockedUsers(userId) {
   if (!userId) {
-    throw new Error("unauthenticated", "ログインが必要です。");
+    // userIdがない場合は空配列を返す
+    console.log("No userId provided to getBlockedUsers, returning empty array");
+    return [];
   }
 
   const blockedUsersSnapshot = await db

@@ -8,6 +8,8 @@ import 'tutorial_screen.dart';
 import 'how_to_use_screen.dart';
 import 'subscription_screen.dart';
 import 'blocked_questions_screen.dart';
+import 'data_migration_screen.dart';
+import 'reward_management_screen.dart';
 import '../providers/subscription_status_notifier.dart';
 import '../providers/resetAppState.dart';
 
@@ -84,6 +86,32 @@ class SettingsScreen extends ConsumerWidget {
             Navigator.of(context).push(
               MaterialPageRoute(
                 builder: (context) => const BlockedQuestionsScreen(),
+              ),
+            );
+          },
+        ),
+        Divider(height: 0),
+        ListTile(
+          leading: Icon(Icons.storage),
+          title: Text('データ管理'),
+          subtitle: Text('ローカルデータへの移行とデータの管理'),
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => DataMigrationScreen(),
+              ),
+            );
+          },
+        ),
+        Divider(height: 0),
+        ListTile(
+          leading: Icon(Icons.monetization_on),
+          title: Text('報酬管理'),
+          subtitle: Text('回答による報酬の確認と管理'),
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => RewardManagementScreen(),
               ),
             );
           },

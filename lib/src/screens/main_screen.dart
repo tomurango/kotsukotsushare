@@ -3,7 +3,6 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'mypage_screen.dart';
 import 'question_board_screen.dart';
-import 'report_screen.dart';
 import 'setting_screen.dart';
 import 'tutorial_screen.dart';
 import '../widgets/custom_bottom_app_bar.dart';
@@ -12,6 +11,7 @@ import '../widgets/question/question_bottom_sheet.dart';
 import '../widgets/question/question_appbar_menu.dart';
 import '../providers/user_data_provider.dart';
 import '../providers/question_provider.dart';
+import '../providers/local_data_provider.dart';
 
 class MainScreen extends HookConsumerWidget {
   @override
@@ -23,14 +23,16 @@ class MainScreen extends HookConsumerWidget {
     final selectedQuestionScreen = ref.watch(selectedQuestionScreenProvider);
     final isExpanded = ref.watch(isExpandedProvider); // 🔥 `bool` 値を取得
 
+    // ローカルデータプロバイダーの初期化を開始
+    ref.watch(useLocalDataProvider);
+
     final pages = [
       MypageScreen(onNavigate: (index) => selectedIndex.value = index),
       QuestionBoardScreen(onNavigate: (index) => selectedIndex.value = index),
-      ReportScreen(onNavigate: (index) => selectedIndex.value = index),
       SettingsScreen(onNavigate: (index) => selectedIndex.value = index),
     ];
 
-    final titles = ['マイメモ', '質問掲示板', 'レポート','設定'];
+    final titles = ['マイメモ', '質問掲示板', '設定'];
 
     // チュートリアル表示
     useEffect(() {

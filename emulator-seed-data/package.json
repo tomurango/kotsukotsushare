@@ -1,0 +1,12 @@
+{
+  "name": "emulator-seed-data",
+  "version": "1.0.0",
+  "description": "Seed data for Firebase Emulator",
+  "main": "seed.js",
+  "scripts": {
+    "seed": "node seed.js"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.7.0"
+  }
+}

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/auth_provider.dart';
 import '../providers/card_memos_provider.dart';
+import '../providers/local_data_provider.dart';
 import '../providers/advice_provider.dart';
 import '../widgets/reflection_bottom_sheet.dart';
 import '../models/memo_data.dart';
@@ -24,7 +25,7 @@ class CardMemoScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final memosAsyncValue = ref.watch(memosProvider(cardId)); // メモデータを取得
+    final memosAsyncValue = ref.watch(unifiedMemosProvider(cardId)); // メモデータを取得
 
     // 日付のフォーマットを設定
     String formatDate(DateTime date) {

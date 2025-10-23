@@ -5,7 +5,9 @@ const db = getFirestore();
 async function getFavoriteQuestions(userId) {
   const userDoc = await db.collection("users").doc(userId).get();
   if (!userDoc.exists) {
-    throw new Error("not-found", "ユーザー情報が見つかりません。");
+    // ユーザードキュメントが存在しない場合は空配列を返す
+    console.log(`User document not found for ${userId}, returning empty favorites`);
+    return [];
   }
 
   const favoriteQuestions = userDoc.data()?.favoriteQuestions || [];

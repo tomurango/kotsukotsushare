@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../providers/auth_provider.dart';
+import '../providers/local_data_provider.dart';
 import 'create_card_screen.dart';
 import 'card_memo_screen.dart';
 
@@ -17,7 +17,7 @@ class MypageScreen extends ConsumerWidget {
       return Center(child: CircularProgressIndicator());
     }
 
-    final cardsAsyncValue = ref.watch(cardsProvider);
+    final cardsAsyncValue = ref.watch(unifiedCardsProvider);
 
     return SingleChildScrollView(
       child: Column(
