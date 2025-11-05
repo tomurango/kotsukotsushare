@@ -1,8 +1,17 @@
 const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const { getFirestore, FieldValue } = require("firebase-admin/firestore");
-const { distributeRewards } = require("../rewards/distributeRewards");
 
 const db = getFirestore();
+
+/**
+ * 現在の期間を取得（"2025-10"形式）
+ */
+function getCurrentPeriod() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  return `${year}-${month}`;
+}
 
 exports.selectBestAnswer = onCall(async (request) => {
   try {
@@ -65,14 +74,37 @@ exports.selectBestAnswer = onCall(async (request) => {
 
     console.log(`Best answer selected: ${answerId} for question ${questionId}`);
 
-    // 貢献度プールから報酬を分配
-    let distributionResult = null;
-    try {
-      distributionResult = await distributeRewards(questionId);
-      console.log("Reward distribution result:", distributionResult);
-    } catch (error) {
-      console.error("Error distributing rewards:", error);
-      // 報酬分配エラーは警告として扱い、ベストアンサー選択は成功とする
+    // 📊 月次貢献度に+5ポイント加算（ベストアンサーボーナス）
+    const currentPeriod = getCurrentPeriod();
+    const contributionRef = db
+      .collection("monthly_contributions")
+      .doc(currentPeriod)
+      .collection("users")
+      .doc(answererId);
+
+    const contributionDoc = await contributionRef.get();
+
+    if (contributionDoc.exists) {
+      // 既存の貢献度に+5ポイント
+      await contributionRef.update({
+        total_points: FieldValue.increment(5), // +5ポイント（ベストアンサーボーナス）
+        best_answer_count: FieldValue.increment(1),
+        updated_at: FieldValue.serverTimestamp(),
+      });
+      console.log(`✅ ${answererId} earned 5 bonus points for best answer in ${currentPeriod}`);
+    } else {
+      // まだ貢献度記録がない場合（通常は回答投稿時に作成されているはず）
+      await contributionRef.set({
+        user_id: answererId,
+        period: currentPeriod,
+        total_points: 5, // ベストアンサーのみの場合
+        answer_count: 0, // 回答カウントは0（addAnswerで記録されるべき）
+        best_answer_count: 1,
+        answers: [],
+        created_at: FieldValue.serverTimestamp(),
+        updated_at: FieldValue.serverTimestamp(),
+      });
+      console.log(`⚠️ ${answererId} got best answer but no contribution record, created with 5 points`);
     }
 
     return {
@@ -80,7 +112,6 @@ exports.selectBestAnswer = onCall(async (request) => {
       questionId: questionId,
       answerId: answerId,
       answererId: answererId,
-      rewardDistribution: distributionResult,
     };
   } catch (error) {
     console.error("Error selecting best answer:", error);

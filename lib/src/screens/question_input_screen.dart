@@ -41,13 +41,13 @@ class _QuestionInputScreenState extends ConsumerState<QuestionInputScreen> {
 
     if (response != null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('質問を投稿しました！')),
+        SnackBar(content: Text('質問を事務局に送信しました。匿名で公開されます。')),
       );
       _questionController.clear();
       ref.read(questionTextProvider.notifier).state = ""; // 入力をクリア
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('質問の投稿に失敗しました。')),
+        SnackBar(content: Text('質問の送信に失敗しました。')),
       );
     }
   }
@@ -56,8 +56,8 @@ class _QuestionInputScreenState extends ConsumerState<QuestionInputScreen> {
     return await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('質問投稿'),
-        content: Text('この質問を投稿しますか？'),
+        title: Text('質問を送信'),
+        content: Text('この質問を事務局に送信しますか？\n\nあなたの質問は匿名で他のユーザーに公開されます。個人情報は一切表示されません。'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
@@ -65,7 +65,7 @@ class _QuestionInputScreenState extends ConsumerState<QuestionInputScreen> {
           ),
           ElevatedButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: Text('投稿する'),
+            child: Text('送信する'),
           ),
         ],
       ),
@@ -82,15 +82,37 @@ class _QuestionInputScreenState extends ConsumerState<QuestionInputScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            "質問を入力",
+            "事務局に質問を送る",
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           SizedBox(height: 8),
+          Container(
+            padding: EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.blue[50],
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.blue[200]!),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.info_outline, color: Colors.blue[700], size: 20),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    "質問は匿名で公開されます。あなたの個人情報は表示されません。",
+                    style: TextStyle(fontSize: 12, color: Colors.blue[900]),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(height: 16),
           TextField(
             controller: _questionController,
             decoration: InputDecoration(
               border: OutlineInputBorder(),
-              hintText: "質問を入力してください",
+              hintText: "悩みや疑問を自由に書いてください",
+              helperText: "例：仕事のモチベーションが上がらない、人間関係で困っている など",
             ),
             maxLines: 5,
           ),
@@ -105,14 +127,14 @@ class _QuestionInputScreenState extends ConsumerState<QuestionInputScreen> {
                 },
                 child: Text("戻る"),
               ),
-              // 質問投稿ボタン (入力があるときのみ有効)
+              // 質問送信ボタン (入力があるときのみ有効)
               ElevatedButton(
                 onPressed: isButtonActive ? _submitQuestion : null, // 入力があるときだけ有効
                 style: ElevatedButton.styleFrom(
                   backgroundColor: isButtonActive ? Color(0xFF008080) : Colors.grey,
                   foregroundColor: Colors.white,
                 ),
-                child: Text("質問を投稿"),
+                child: Text("事務局に送る"),
               ),
             ],
           ),

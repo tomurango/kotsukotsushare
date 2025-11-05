@@ -70,87 +70,165 @@ class _QuestionBoardScreenState extends ConsumerState<QuestionBoardScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                "質問:",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.grey[200],
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  questionsData[validIndex]["question"] ?? "質問なし",
-                  style: const TextStyle(fontSize: 16),
+              // チャットUIスタイル：自分の質問は右寄せ、他人は左寄せ
+              Align(
+                alignment: isMine ? Alignment.centerRight : Alignment.centerLeft,
+                child: Column(
+                  crossAxisAlignment: isMine ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (isMine) Icon(Icons.person, size: 18, color: Colors.green[700]),
+                        if (isMine) SizedBox(width: 4),
+                        Text(
+                          isMine ? "あなたの質問:" : "質問:",
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: isMine ? Colors.green[700] : Colors.black,
+                          ),
+                        ),
+                        if (!isMine) SizedBox(width: 4),
+                        if (!isMine) Icon(Icons.help_outline, size: 18, color: Colors.grey[700]),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      constraints: BoxConstraints(
+                        maxWidth: MediaQuery.of(context).size.width * 0.85,
+                      ),
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: isMine ? Color(0xFFDCF8C6) : Colors.grey[200], // 自分:緑、他人:灰色
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black12,
+                            blurRadius: 4,
+                            offset: Offset(2, 2),
+                          ),
+                        ],
+                      ),
+                      child: Text(
+                        questionsData[validIndex]["question"] ?? "質問なし",
+                        style: const TextStyle(fontSize: 16),
+                      ),
+                    ),
+                  ],
                 ),
               ),
 
               const SizedBox(height: 16),
-              const Text(
-                "あなたの考え:",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+
+              // 自分の質問か他人の質問かで表示を変える
+              Row(
+                children: [
+                  Icon(
+                    isMine ? Icons.edit_note : Icons.reply,
+                    size: 20,
+                    color: isMine ? Colors.green[700] : Colors.blue[700],
+                  ),
+                  SizedBox(width: 6),
+                  Text(
+                    isMine ? "自分のメモ:" : "あなたの回答:",
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: isMine ? Colors.green[700] : Colors.blue[700],
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 8),
-              TextField(
-                controller: _answerController,
-                decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
-                  hintText: "あなたの考えを教えてください",
+
+              Container(
+                decoration: BoxDecoration(
+                  color: isMine ? Colors.green[50] : Colors.blue[50],
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: isMine ? Colors.green[200]! : Colors.blue[200]!,
+                    width: 2,
+                  ),
                 ),
-                maxLines: 3,
+                child: TextField(
+                  controller: _answerController,
+                  decoration: InputDecoration(
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.all(12),
+                    hintText: isMine
+                        ? "この質問に対する自分の考えをメモしましょう"
+                        : "質問者に伝えたい考えを書きましょう",
+                    hintStyle: TextStyle(
+                      color: Colors.grey[600],
+                      fontSize: 14,
+                    ),
+                  ),
+                  maxLines: 3,
+                ),
               ),
               const SizedBox(height: 12),
 
-              // 🔥 送信ボタン
-              ElevatedButton(
-                onPressed: isSubmitting
-                    ? null
-                    : () async {
-                        if (_answerController.text.trim().isEmpty) return;
-                        final success = await ref
-                            .read(answerSubmitProvider.notifier)
-                            .submitAnswer(questionId, questionsData[validIndex]["question"],_answerController.text.trim());
+              // 送信ボタン
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: isSubmitting
+                      ? null
+                      : () async {
+                          if (_answerController.text.trim().isEmpty) return;
+                          final success = await ref
+                              .read(answerSubmitProvider.notifier)
+                              .submitAnswer(questionId, questionsData[validIndex]["question"],_answerController.text.trim());
 
-                        if (success) {
-                          // _answerController.clear();
-                          final newAnswer = {
-                            "text": _answerController.text.trim(),
-                            "isMine": true,
-                          };
+                          if (success) {
+                            // _answerController.clear();
+                            final newAnswer = {
+                              "text": _answerController.text.trim(),
+                              "isMine": true,
+                            };
 
-                          // 今あるキャッシュを取得
-                          final previousAnswers = ref.read(cachedAnswersProvider)[questionId] ?? [];
+                            // 今あるキャッシュを取得
+                            final previousAnswers = ref.read(cachedAnswersProvider)[questionId] ?? [];
 
-                          // 更新したリストを生成（すでに自分の回答があるなら上書き、なければ追加）
-                          final updatedAnswers = [
-                            ...previousAnswers.where((a) => a["isMine"] != true),
-                            newAnswer,
-                          ];
+                            // 更新したリストを生成（すでに自分の回答があるなら上書き、なければ追加）
+                            final updatedAnswers = [
+                              ...previousAnswers.where((a) => a["isMine"] != true),
+                              newAnswer,
+                            ];
 
-                          // キャッシュを更新
-                          ref.read(cachedAnswersProvider.notifier).updateAnswers(questionId, updatedAnswers);
-                          
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text("回答を送信しました！")),
-                          );
-                        } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text("送信に失敗しました")),
-                          );
-                        }
-                      },
-                /*child: isSubmitting
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text("考えを質問者へ伝える"),*/
-                child: isSubmitting
-                  ? const CircularProgressIndicator(color: Colors.white)
-                  : Text(
-                      isMine ? "自分の考えを記録する" : "考えを質問者へ伝える",
-                    ),
+                            // キャッシュを更新
+                            ref.read(cachedAnswersProvider.notifier).updateAnswers(questionId, updatedAnswers);
 
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(isMine ? "メモを記録しました！" : "回答を送信しました！"),
+                                backgroundColor: isMine ? Colors.green : Colors.blue,
+                              ),
+                            );
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text("送信に失敗しました")),
+                            );
+                          }
+                        },
+                  icon: isSubmitting
+                      ? SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                        )
+                      : Icon(isMine ? Icons.save : Icons.send),
+                  label: Text(
+                    isMine ? "自分の考えを記録する" : "考えを質問者へ伝える",
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: isMine ? Colors.green[600] : Colors.blue[600],
+                    foregroundColor: Colors.white,
+                    padding: EdgeInsets.symmetric(vertical: 14),
+                  ),
+                ),
               ),
               const SizedBox(height: 16),
 

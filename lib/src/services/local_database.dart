@@ -4,6 +4,7 @@ import '../models/memo_data.dart';
 import '../models/question_payment_data.dart';
 import '../models/answer_reward_data.dart';
 import '../models/question_unlock_data.dart';
+import '../models/reward_withdrawal_data.dart';
 import '../providers/auth_provider.dart';
 
 class LocalDatabase {
@@ -20,7 +21,7 @@ class LocalDatabase {
 
     return await openDatabase(
       path,
-      version: 3,
+      version: 5,
       onCreate: _createTables,
       onUpgrade: _onUpgrade,
     );
@@ -61,6 +62,34 @@ class LocalDatabase {
 
       // 古い answer_unlocks テーブルがあれば削除
       await db.execute('DROP TABLE IF EXISTS answer_unlocks');
+    }
+
+    if (oldVersion < 4) {
+      // question_unlocks テーブルに is_test カラムを追加
+      await db.execute('''
+        ALTER TABLE question_unlocks ADD COLUMN is_test INTEGER NOT NULL DEFAULT 1
+      ''');
+    }
+
+    if (oldVersion < 5) {
+      // answer_rewards テーブルを月次プールモデルに更新
+      // 古いテーブルを削除して新しい構造で再作成
+      await db.execute('DROP TABLE IF EXISTS answer_rewards');
+      await db.execute('''
+        CREATE TABLE answer_rewards (
+          id TEXT PRIMARY KEY,
+          period TEXT NOT NULL,
+          user_id TEXT NOT NULL,
+          reward_amount INTEGER NOT NULL,
+          contribution_points INTEGER NOT NULL DEFAULT 0,
+          is_best_answerer INTEGER NOT NULL DEFAULT 0,
+          status TEXT NOT NULL,
+          created_at INTEGER NOT NULL,
+          paid_at INTEGER
+        )
+      ''');
+      await db.execute('CREATE INDEX idx_answer_rewards_user_id ON answer_rewards(user_id)');
+      await db.execute('CREATE INDEX idx_answer_rewards_period ON answer_rewards(period)');
     }
   }
 
@@ -103,14 +132,15 @@ class LocalDatabase {
       )
     ''');
 
-    // 回答報酬テーブル
+    // 回答報酬テーブル（月次プールモデル）
     await db.execute('''
       CREATE TABLE answer_rewards (
         id TEXT PRIMARY KEY,
-        answer_id TEXT NOT NULL,
-        answerer_id TEXT NOT NULL,
-        question_payment_id TEXT NOT NULL,
+        period TEXT NOT NULL,
+        user_id TEXT NOT NULL,
         reward_amount INTEGER NOT NULL,
+        contribution_points INTEGER NOT NULL DEFAULT 0,
+        is_best_answerer INTEGER NOT NULL DEFAULT 0,
         status TEXT NOT NULL,
         created_at INTEGER NOT NULL,
         paid_at INTEGER
@@ -136,6 +166,7 @@ class LocalDatabase {
         question_id TEXT NOT NULL,
         unlocked_by TEXT NOT NULL,
         amount INTEGER NOT NULL,
+        is_test INTEGER NOT NULL DEFAULT 1,
         created_at INTEGER NOT NULL
       )
     ''');
@@ -144,7 +175,8 @@ class LocalDatabase {
     await db.execute('CREATE INDEX idx_memos_card_id ON memos(card_id)');
     await db.execute('CREATE INDEX idx_memos_created_at ON memos(created_at)');
     await db.execute('CREATE INDEX idx_question_payments_user_id ON question_payments(user_id)');
-    await db.execute('CREATE INDEX idx_answer_rewards_answerer_id ON answer_rewards(answerer_id)');
+    await db.execute('CREATE INDEX idx_answer_rewards_user_id ON answer_rewards(user_id)');
+    await db.execute('CREATE INDEX idx_answer_rewards_period ON answer_rewards(period)');
     await db.execute('CREATE INDEX idx_reward_withdrawals_user_id ON reward_withdrawals(user_id)');
     await db.execute('CREATE INDEX idx_question_unlocks_question_id ON question_unlocks(question_id)');
     await db.execute('CREATE INDEX idx_question_unlocks_unlocked_by ON question_unlocks(unlocked_by)');
@@ -329,7 +361,7 @@ class LocalDatabase {
     final db = await database;
     final List<Map<String, dynamic>> maps = await db.query(
       'answer_rewards',
-      where: 'answerer_id = ?',
+      where: 'user_id = ?',
       whereArgs: [userId],
       orderBy: 'created_at DESC',
     );
@@ -361,7 +393,7 @@ class LocalDatabase {
   static Future<int> getTotalEarnings(String userId) async {
     final db = await database;
     final result = await db.rawQuery(
-      'SELECT SUM(reward_amount) as total FROM answer_rewards WHERE answerer_id = ? AND status = ?',
+      'SELECT SUM(reward_amount) as total FROM answer_rewards WHERE user_id = ? AND status = ?',
       [userId, RewardStatus.paid.toString()],
     );
 
@@ -371,7 +403,7 @@ class LocalDatabase {
   static Future<int> getPendingEarnings(String userId) async {
     final db = await database;
     final result = await db.rawQuery(
-      'SELECT SUM(reward_amount) as total FROM answer_rewards WHERE answerer_id = ? AND status = ?',
+      'SELECT SUM(reward_amount) as total FROM answer_rewards WHERE user_id = ? AND status = ?',
       [userId, RewardStatus.pending.toString()],
     );
 
@@ -449,5 +481,51 @@ class LocalDatabase {
     );
 
     return (result.first['total'] as int?) ?? 0;
+  }
+
+  // 報酬引き出し操作
+  static Future<void> insertRewardWithdrawal(RewardWithdrawalData withdrawal) async {
+    final db = await database;
+    await db.insert(
+      'reward_withdrawals',
+      withdrawal.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  static Future<List<RewardWithdrawalData>> getRewardWithdrawalsByUser(String userId) async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'reward_withdrawals',
+      where: 'user_id = ?',
+      whereArgs: [userId],
+      orderBy: 'requested_at DESC',
+    );
+
+    return List.generate(maps.length, (i) {
+      return RewardWithdrawalData.fromMap(maps[i]);
+    });
+  }
+
+  static Future<void> updateRewardWithdrawalStatus(
+    String withdrawalId,
+    WithdrawalStatus status, {
+    DateTime? completedAt,
+  }) async {
+    final db = await database;
+    final updateData = <String, dynamic>{
+      'status': status.toString(),
+    };
+
+    if (completedAt != null) {
+      updateData['completed_at'] = completedAt.millisecondsSinceEpoch;
+    }
+
+    await db.update(
+      'reward_withdrawals',
+      updateData,
+      where: 'id = ?',
+      whereArgs: [withdrawalId],
+    );
   }
 }

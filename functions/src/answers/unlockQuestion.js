@@ -1,11 +1,22 @@
 const { onCall, HttpsError } = require("firebase-functions/v2/https");
-const { getFirestore, FieldValue } = require("firebase-admin/firestore");
+const { getFirestore, FieldValue} = require("firebase-admin/firestore");
 
 const db = getFirestore();
 
-// 質問開封料金（貢献度プールモデル）
-const UNLOCK_PRICE = 100; // 100円
+// 質問開封料金（月次プールモデル）
+const UNLOCK_PRICE = 160; // 160円
 const POOL_PERCENTAGE = 0.6; // 60%がプールへ
+const IS_TEST_PERIOD = true; // テスト期間中フラグ
+
+/**
+ * 現在の期間を取得（"2025-10"形式）
+ */
+function getCurrentPeriod() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  return `${year}-${month}`;
+}
 
 exports.unlockQuestion = onCall(async (request) => {
   try {
@@ -30,9 +41,9 @@ exports.unlockQuestion = onCall(async (request) => {
     const questionData = questionDoc.data();
     const questionOwnerId = questionData.createdBy;
 
-    // 自分の質問は開封不要
-    if (questionOwnerId === userId) {
-      throw new HttpsError("invalid-argument", "自分の質問は開封できません。");
+    // 他人の質問は開封できない（UI側で既に制限しているが念のため）
+    if (questionOwnerId !== userId) {
+      throw new HttpsError("invalid-argument", "他人の質問は開封できません。");
     }
 
     // 開封済みか確認
@@ -46,6 +57,9 @@ exports.unlockQuestion = onCall(async (request) => {
       throw new HttpsError("already-exists", "この質問は既に開封済みです。");
     }
 
+    // 現在の期間を取得
+    const currentPeriod = getCurrentPeriod();
+
     // 開封記録を作成
     const unlockId = db.collection("question_unlocks").doc().id;
     const unlockData = {
@@ -53,6 +67,7 @@ exports.unlockQuestion = onCall(async (request) => {
       question_id: questionId,
       unlocked_by: userId,
       amount: UNLOCK_PRICE,
+      is_test: IS_TEST_PERIOD, // テスト期間中フラグ
       created_at: FieldValue.serverTimestamp(),
     };
 
@@ -66,8 +81,8 @@ exports.unlockQuestion = onCall(async (request) => {
     // プールへの入金額を計算
     const poolAmount = Math.floor(UNLOCK_PRICE * POOL_PERCENTAGE);
 
-    // プールに金額を追加
-    const poolRef = db.collection("contribution_pools").doc(questionId);
+    // 月次プールに金額を追加
+    const poolRef = db.collection("monthly_pools").doc(currentPeriod);
     const poolDoc = await poolRef.get();
 
     if (poolDoc.exists) {
@@ -80,21 +95,25 @@ exports.unlockQuestion = onCall(async (request) => {
     } else {
       // 新規プール作成
       await poolRef.set({
-        question_id: questionId,
+        period: currentPeriod,
         pool_amount: poolAmount,
         unlock_count: 1,
         distributed: false,
+        distributed_at: null,
+        is_test_period: IS_TEST_PERIOD,
         created_at: FieldValue.serverTimestamp(),
         updated_at: FieldValue.serverTimestamp(),
       });
     }
 
-    console.log(`Question ${questionId} unlocked by ${userId}, ${poolAmount}円 added to pool`);
+    console.log(`Question ${questionId} unlocked by ${userId}, ${poolAmount}円 added to ${currentPeriod} pool (test: ${IS_TEST_PERIOD})`);
 
     return {
       success: true,
       unlockId: unlockId,
       poolAmount: poolAmount,
+      period: currentPeriod,
+      isTest: IS_TEST_PERIOD,
     };
   } catch (error) {
     console.error("Error unlocking question:", error);

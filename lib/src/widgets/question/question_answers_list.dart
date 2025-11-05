@@ -179,7 +179,7 @@ class _QuestionUnlockButton extends HookWidget {
                     child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                   )
                 : const Icon(Icons.lock_open),
-            label: Text(isUnlocking.value ? '開封中...' : '開封する（100円）'),
+            label: Text(isUnlocking.value ? '開封中...' : '開封する（160円）'),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF008080),
               foregroundColor: Colors.white,
@@ -201,7 +201,50 @@ class _QuestionUnlockButton extends HookWidget {
         context: context,
         builder: (context) => AlertDialog(
           title: const Text('質問を開封'),
-          content: const Text('この質問の回答を開封しますか？\n開封料：100円\n（60円が貢献度プールに入り、回答者に分配されます）'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'この質問の回答を開封しますか？',
+                style: TextStyle(fontSize: 16),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                '通常料金: 160円',
+                style: TextStyle(fontSize: 14, color: Colors.grey),
+              ),
+              const Text(
+                '（67円が月次プールに入り、回答者に分配されます）',
+                style: TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.orange[50],
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.orange[300]!, width: 2),
+                ),
+                child: Row(
+                  children: const [
+                    Icon(Icons.warning_amber, color: Colors.orange, size: 20),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        '現在はテスト期間中のため無料です\n本リリース後は実際に課金されます',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.orange,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
@@ -209,7 +252,10 @@ class _QuestionUnlockButton extends HookWidget {
             ),
             ElevatedButton(
               onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('開封する'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF008080),
+              ),
+              child: const Text('無料で開封する'),
             ),
           ],
         ),
@@ -230,12 +276,14 @@ class _QuestionUnlockButton extends HookWidget {
       // 開封記録をローカルに保存
       final unlockId = response.data['unlockId'];
       final poolAmount = response.data['poolAmount'];
+      final isTest = response.data['isTest'] ?? true;
 
       final unlockData = QuestionUnlockData(
         id: unlockId,
         questionId: questionId,
         unlockedBy: currentUserId,
-        amount: 100,
+        amount: 160, // テスト期間中は無料だが、通常料金は160円
+        isTest: isTest,
         createdAt: DateTime.now(),
       );
 
@@ -246,8 +294,13 @@ class _QuestionUnlockButton extends HookWidget {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('質問を開封しました（貢献度プール：${poolAmount}円）'),
+          content: Text(
+            isTest
+              ? '質問を開封しました（テスト期間中・無料）\n仮想プール：${poolAmount}円'
+              : '質問を開封しました（月次プール：${poolAmount}円）'
+          ),
           backgroundColor: Colors.green,
+          duration: const Duration(seconds: 4),
         ),
       );
     } catch (e) {

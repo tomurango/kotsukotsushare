@@ -3,6 +3,16 @@ const functions = require("firebase-functions");
 const axios = require("axios");
 const { db, FieldValue, model, PERSPECTIVE_API_KEY } = require("../../config");
 
+/**
+ * 現在の期間を取得（"2025-10"形式）
+ */
+function getCurrentPeriod() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  return `${year}-${month}`;
+}
+
 // 🔍 Perspective API を使って TOXICITY を検出
 async function checkToxicity(text) {
   const response = await axios.post(
@@ -85,6 +95,42 @@ exports.addAnswer = onCall(async (request) => {
     await db.collection("users").doc(userId).set({
       favoriteQuestions: FieldValue.arrayUnion(questionId)
     }, { merge: true });
+
+    // 📊 月次貢献度に記録（承認された回答のみ）
+    if (status === "approved") {
+      const currentPeriod = getCurrentPeriod();
+      const contributionRef = db
+        .collection("monthly_contributions")
+        .doc(currentPeriod)
+        .collection("users")
+        .doc(userId);
+
+      const contributionDoc = await contributionRef.get();
+
+      if (contributionDoc.exists) {
+        // 既存の貢献度に追加
+        await contributionRef.update({
+          total_points: FieldValue.increment(1), // +1ポイント
+          answer_count: FieldValue.increment(1),
+          answers: FieldValue.arrayUnion(answerDocId),
+          updated_at: FieldValue.serverTimestamp(),
+        });
+      } else {
+        // 新規作成
+        await contributionRef.set({
+          user_id: userId,
+          period: currentPeriod,
+          total_points: 1,
+          answer_count: 1,
+          best_answer_count: 0,
+          answers: [answerDocId],
+          created_at: FieldValue.serverTimestamp(),
+          updated_at: FieldValue.serverTimestamp(),
+        });
+      }
+
+      console.log(`✅ ${userId} earned 1 point for ${currentPeriod} (answer: ${answerDocId})`);
+    }
 
     return { message: "回答を追加しました" };
   } catch (error) {
