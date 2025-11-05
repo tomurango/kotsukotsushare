@@ -165,6 +165,19 @@ final localMemosProvider = StreamProvider.family<List<MemoData>, String>((ref, c
   }).asyncMap((future) => future);
 });
 
+// ローカル独立メモデータプロバイダー
+final localStandaloneMemosProvider = StreamProvider<List<MemoData>>((ref) {
+  final useLocal = ref.watch(useLocalDataProvider);
+
+  if (!useLocal) {
+    return Stream.value([]);
+  }
+
+  return Stream.periodic(const Duration(milliseconds: 500), (_) async {
+    return await LocalDatabase.getStandaloneMemos();
+  }).asyncMap((future) => future);
+});
+
 // 統合カードデータプロバイダー（FirestoreとLocalを切り替え）
 final unifiedCardsProvider = StreamProvider.autoDispose<List<CardData>>((ref) async* {
   final useLocal = ref.watch(useLocalDataProvider);
@@ -190,6 +203,22 @@ final unifiedMemosProvider = StreamProvider.family<List<MemoData>, String>((ref,
     }
   } else {
     await for (final memos in ref.watch(memosProvider(cardId).stream)) {
+      yield memos;
+    }
+  }
+});
+
+// 統合独立メモデータプロバイダー（FirestoreとLocalを切り替え）
+final unifiedStandaloneMemosProvider = StreamProvider<List<MemoData>>((ref) async* {
+  final useLocal = ref.watch(useLocalDataProvider);
+
+  if (useLocal) {
+    await for (final memos in ref.watch(localStandaloneMemosProvider.stream)) {
+      yield memos;
+    }
+  } else {
+    // Firestoreからも独立メモを取得（互換性）
+    await for (final memos in ref.watch(memosProvider('standalone').stream)) {
       yield memos;
     }
   }

@@ -24,14 +24,14 @@ class SettingsScreen extends ConsumerWidget {
 
     return ListView(
       children: [
-        // ユーザープランの確認と購入画面への遷移
-        ListTile(
-          leading: Icon(Icons.subscriptions),
-          title: Text(
-            isPremium ? '現在のプラン: Premium' : '現在のプラン: Free',
-          ),
-          //title: Text('現在のプラン: $userPlan'),
-          subtitle: Text(isPremium ? 'プレミアムプランをご利用中です' : 'プレミアムプランを購入できます'),
+        // ========== プラン・報酬 ==========
+        _buildSectionHeader(context, 'プラン・報酬'),
+
+        _buildSettingItem(
+          context: context,
+          icon: Icons.subscriptions,
+          title: isPremium ? '現在のプラン: Premium' : '現在のプラン: Free',
+          subtitle: isPremium ? 'プレミアムプランをご利用中です' : 'プレミアムプランを購入できます',
           onTap: () {
             if (!isPremium) {
               Navigator.of(context).push(
@@ -40,74 +40,16 @@ class SettingsScreen extends ConsumerWidget {
                 ),
               );
             } else if (isPremium) {
-              // プレミアムユーザーの場合、サブスク管理のDialogを表示
               _showSubscriptionManagementDialog(context);
             }
           },
         ),
-        Divider(
-          height: 0,
-        ),
-        // チュートリアル再表示
-        ListTile(
-          leading: Icon(Icons.flag),
-          title: Text('アプリの基本理念を再確認'),
-          subtitle: Text('アプリの目指す価値や考え方をもう一度振り返ることができます'),
-          onTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) => const TutorialScreen(),
-              ),
-            );
-          },
-        ),
-        Divider(
-          height: 0,
-        ),
-        // アプリの使い方
-        ListTile(
-          leading: Icon(Icons.help),
-          title: Text('アプリの使い方'),
-          subtitle: Text('アプリの使い方を確認します'),
-          onTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) => const HowToUseScreen(),
-              ),
-            );
-          },
-        ),
-        Divider(height: 0),
-        ListTile(
-          leading: Icon(Icons.block),
-          title: Text('ブロック済み質問一覧'),
-          subtitle: Text('ブロックした投稿者の質問を確認・解除できます'),
-          onTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) => const BlockedQuestionsScreen(),
-              ),
-            );
-          },
-        ),
-        Divider(height: 0),
-        ListTile(
-          leading: Icon(Icons.storage),
-          title: Text('データ管理'),
-          subtitle: Text('ローカルデータへの移行とデータの管理'),
-          onTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) => DataMigrationScreen(),
-              ),
-            );
-          },
-        ),
-        Divider(height: 0),
-        ListTile(
-          leading: Icon(Icons.monetization_on),
-          title: Text('報酬管理'),
-          subtitle: Text('回答による報酬の確認と管理'),
+
+        _buildSettingItem(
+          context: context,
+          icon: Icons.monetization_on,
+          title: '報酬管理',
+          subtitle: '回答による報酬の確認と管理',
           onTap: () {
             Navigator.of(context).push(
               MaterialPageRoute(
@@ -117,27 +59,42 @@ class SettingsScreen extends ConsumerWidget {
           },
         ),
 
+        // ========== ヘルプ・サポート ==========
+        _buildSectionHeader(context, 'ヘルプ・サポート'),
 
-        Divider(
-          height: 0,
-        ),
-        // サインアウト
-        ListTile(
-          leading: Icon(Icons.exit_to_app),
-          title: Text('サインアウト'),
-          subtitle: Text('現在ログインしているメールアドレス (${user?.email ?? ''}) からサインアウトします'),
+        _buildSettingItem(
+          context: context,
+          icon: Icons.flag,
+          title: 'アプリの基本理念を再確認',
+          subtitle: 'アプリの目指す価値や考え方をもう一度振り返ることができます',
           onTap: () {
-            _showSignOutDialog(context, ref);
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => const TutorialScreen(),
+              ),
+            );
           },
         ),
-        Divider(
-          height: 0,
+
+        _buildSettingItem(
+          context: context,
+          icon: Icons.help,
+          title: 'アプリの使い方',
+          subtitle: 'アプリの使い方を確認します',
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => const HowToUseScreen(),
+              ),
+            );
+          },
         ),
-        // お問い合わせ、利用規約、プライバシーポリシー
-        ListTile(
-          leading: Icon(Icons.contact_page),
-          title: Text('お問い合わせ、利用規約、プライバシーポリシー'),
-          subtitle: Text('https://chokushii.com/contact へ遷移します'),
+
+        _buildSettingItem(
+          context: context,
+          icon: Icons.contact_page,
+          title: 'お問い合わせ、利用規約、プライバシーポリシー',
+          subtitle: 'https://chokushii.com/contact へ遷移します',
           onTap: () async {
             const url = 'https://chokushii.com/contact';
             if (await canLaunch(url)) {
@@ -147,22 +104,106 @@ class SettingsScreen extends ConsumerWidget {
             }
           },
         ),
-        Divider(
-          height: 0,
+
+        // ========== データ・プライバシー ==========
+        _buildSectionHeader(context, 'データ・プライバシー'),
+
+        _buildSettingItem(
+          context: context,
+          icon: Icons.storage,
+          title: 'データ管理',
+          subtitle: 'ローカルデータへの移行とデータの管理',
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => DataMigrationScreen(),
+              ),
+            );
+          },
         ),
-        // アカウント削除
-        ListTile(
-          leading: Icon(Icons.delete),
-          title: Text('アカウント削除'),
-          subtitle: Text('アカウントを削除します'),
+
+        _buildSettingItem(
+          context: context,
+          icon: Icons.block,
+          title: 'ブロック済み質問一覧',
+          subtitle: 'ブロックした投稿者の質問を確認・解除できます',
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => const BlockedQuestionsScreen(),
+              ),
+            );
+          },
+        ),
+
+        // ========== アカウント ==========
+        _buildSectionHeader(context, 'アカウント'),
+
+        _buildSettingItem(
+          context: context,
+          icon: Icons.exit_to_app,
+          title: 'サインアウト',
+          subtitle: '現在ログインしているメールアドレス (${user?.email ?? ''}) からサインアウトします',
+          onTap: () {
+            _showSignOutDialog(context, ref);
+          },
+        ),
+
+        _buildSettingItem(
+          context: context,
+          icon: Icons.delete,
+          title: 'アカウント削除',
+          subtitle: 'アカウントを削除します',
           onTap: () {
             _deleteAccount(context);
           },
         ),
-        Divider(
-          height: 0,
-        ),
+
+        SizedBox(height: 32), // 最後の余白
       ],
+    );
+  }
+
+  // セクションヘッダーを作成
+  Widget _buildSectionHeader(BuildContext context, String title) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.fromLTRB(16, 32, 16, 12),
+      child: Text(
+        title,
+        style: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.bold,
+          color: Theme.of(context).primaryColor,
+          letterSpacing: 0.5,
+        ),
+      ),
+    );
+  }
+
+  // 設定項目を作成
+  Widget _buildSettingItem({
+    required BuildContext context,
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return ListTile(
+      leading: Icon(icon, size: 28),
+      title: Text(
+        title,
+        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+      ),
+      subtitle: Text(
+        subtitle,
+        style: TextStyle(fontSize: 13),
+      ),
+      onTap: onTap,
+      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+      dense: true,
+      visualDensity: VisualDensity.compact,
+      minVerticalPadding: 0,
     );
   }
 

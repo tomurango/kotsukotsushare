@@ -17,146 +17,120 @@ class ReflectionBottomSheet extends ConsumerStatefulWidget {
 
 
 class _ReflectionBottomSheetState extends ConsumerState<ReflectionBottomSheet> {
-  int selectedSegment = 0;
-
   final contentController = TextEditingController();
-  final feelingController = TextEditingController();
-  final truthController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-
     // 初期データをセット
     contentController.text = widget.memo.content;
-    if (widget.memo.type == 'reflection') {
-      feelingController.text = widget.memo.feeling ?? '';
-      truthController.text = widget.memo.truth ?? '';
-      selectedSegment = 1; // reflectionモードにセット
-    } else {
-      selectedSegment = 0; // memoモードにセット
-    }
   }
 
   @override
   Widget build(BuildContext context) {
-    // final isPublic = ref.watch(isPublicProvider);
     final isKeyboardVisible = MediaQuery.of(context).viewInsets.bottom > 0;
 
     return Padding(
-      padding: const EdgeInsets.all(16.0),
+      padding: EdgeInsets.only(
+        left: 16.0,
+        right: 16.0,
+        top: 16.0,
+        bottom: isKeyboardVisible ? MediaQuery.of(context).viewInsets.bottom : 16.0,
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ToggleButtons(
-            isSelected: [selectedSegment == 0, selectedSegment == 1],
-            onPressed: (int index) {
-              setState(() {
-                selectedSegment = index;
-              });
-            },
-            children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: Text('メモ'),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: Text('内省'),
-              ),
-            ],
+          Text(
+            widget.memo.id.isEmpty ? '新しいメモ' : 'メモを編集',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
           ),
           SizedBox(height: 16),
-          if (selectedSegment == 0) ...[
-            TextField(
-              controller: contentController,
-              decoration: InputDecoration(
-                labelText: 'メモの内容',
-                border: OutlineInputBorder(),
-              ),
+          TextField(
+            controller: contentController,
+            decoration: InputDecoration(
+              labelText: 'メモの内容',
+              border: OutlineInputBorder(),
             ),
-          ] else ...[
-            TextField(
-              controller: contentController,
-              decoration: InputDecoration(
-                labelText: '内省の内容 (何があったか)',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            SizedBox(height: 16),
-            TextField(
-              controller: feelingController,
-              decoration: InputDecoration(
-                labelText: 'どう感じたか',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            SizedBox(height: 16),
-            TextField(
-              controller: truthController,
-              decoration: InputDecoration(
-                labelText: '面白い真実は何か',
-                border: OutlineInputBorder(),
-              ),
-            ),
-          ],
+            maxLines: 5,
+            autofocus: widget.memo.id.isEmpty, // 新規作成時は自動フォーカス
+          ),
           SizedBox(height: 16),
-          // メモは公開されない旨がわかるテキストを表示
           Text(
             '※ メモは公開されません',
-            style: TextStyle(color: Colors.grey),
+            style: TextStyle(color: Colors.grey, fontSize: 12),
           ),
-
-          ElevatedButton(
-            onPressed: () async {
-              final user = FirebaseAuth.instance.currentUser;
-
-              if (user != null) {
-                final memosCollection = FirebaseFirestore.instance
-                    .collection('users')
-                    .doc(user.uid)
-                    .collection('cards')
-                    .doc(widget.cardId)
-                    .collection('memos');
-
-                // 上書きデータを構築
-                final updatedData = {
-                  'content': contentController.text,
-                  //'isPublic': isPublic,
-                  'type': selectedSegment == 0 ? 'memo' : 'reflection',
-                  'updatedAt': Timestamp.now(),
-                };
-
-                if (selectedSegment == 1) {
-                  updatedData['feeling'] = feelingController.text;
-                  updatedData['truth'] = truthController.text;
+          SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () async {
+                if (contentController.text.trim().isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('メモの内容を入力してください')),
+                  );
+                  return;
                 }
 
-                try {
-                  if (widget.memo.id.isNotEmpty) {
-                    // 上書き更新: idが存在する場合
-                    await memosCollection.doc(widget.memo.id).update(updatedData);
-                    print('メモを上書きしました');
-                  } else {
-                    // 新規作成: idが空の場合
-                    updatedData['createdAt'] = Timestamp.now();
-                    updatedData['userId'] = user.uid;
-                    await memosCollection.add(updatedData);
-                    print('新規メモを作成しました');
+                final user = FirebaseAuth.instance.currentUser;
+
+                if (user != null) {
+                  final memosCollection = FirebaseFirestore.instance
+                      .collection('users')
+                      .doc(user.uid)
+                      .collection('cards')
+                      .doc(widget.cardId)
+                      .collection('memos');
+
+                  // 保存データを構築（シンプル化）
+                  final memoData = {
+                    'content': contentController.text.trim(),
+                    'type': '', // 空文字（カテゴリなし）
+                    'feeling': '', // 後方互換性のため保持
+                    'truth': '', // 後方互換性のため保持
+                    'updatedAt': Timestamp.now(),
+                  };
+
+                  try {
+                    if (widget.memo.id.isNotEmpty) {
+                      // 上書き更新
+                      await memosCollection.doc(widget.memo.id).update(memoData);
+                    } else {
+                      // 新規作成
+                      memoData['createdAt'] = Timestamp.now();
+                      memoData['userId'] = user.uid;
+                      await memosCollection.add(memoData);
+                    }
+
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(widget.memo.id.isEmpty ? 'メモを作成しました' : 'メモを更新しました'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  } catch (e) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('保存に失敗しました: $e'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
                   }
-
-                  Navigator.pop(context); // ボトムシートを閉じる
-                } catch (e) {
-                  print('エラーが発生しました: $e');
                 }
-              }
-            },
-            child: Text('保存'),
+              },
+              style: ElevatedButton.styleFrom(
+                padding: EdgeInsets.symmetric(vertical: 16),
+              ),
+              child: Text(
+                widget.memo.id.isEmpty ? 'メモを保存' : '変更を保存',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+            ),
           ),
-
-          if (isKeyboardVisible)
-            SizedBox(height: MediaQuery.of(context).viewInsets.bottom),
         ],
       ),
     );

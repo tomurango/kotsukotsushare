@@ -8,7 +8,8 @@ class MemoData {
   final String type;
   final String feeling;
   final String truth;
-  
+  final List<String> tags; // タグシステム（新機能）
+
   MemoData({
     required this.cardId,
     required this.id,
@@ -18,6 +19,7 @@ class MemoData {
     required this.type,
     required this.feeling,
     required this.truth,
+    this.tags = const [], // デフォルトは空リスト
   });
 
   // 空のデータを生成するファクトリメソッド
@@ -31,6 +33,30 @@ class MemoData {
     type: '',
     feeling: '',
     truth: '',
+    tags: [],
+    );
+  }
+
+  // tagsを更新した新しいインスタンスを返す
+  MemoData copyWith({
+    String? cardId,
+    String? id,
+    String? content,
+    DateTime? createdAt,
+    String? type,
+    String? feeling,
+    String? truth,
+    List<String>? tags,
+  }) {
+    return MemoData(
+      cardId: cardId ?? this.cardId,
+      id: id ?? this.id,
+      content: content ?? this.content,
+      createdAt: createdAt ?? this.createdAt,
+      type: type ?? this.type,
+      feeling: feeling ?? this.feeling,
+      truth: truth ?? this.truth,
+      tags: tags ?? this.tags,
     );
   }
 }

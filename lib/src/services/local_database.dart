@@ -21,7 +21,7 @@ class LocalDatabase {
 
     return await openDatabase(
       path,
-      version: 5,
+      version: 6,
       onCreate: _createTables,
       onUpgrade: _onUpgrade,
     );
@@ -91,6 +91,13 @@ class LocalDatabase {
       await db.execute('CREATE INDEX idx_answer_rewards_user_id ON answer_rewards(user_id)');
       await db.execute('CREATE INDEX idx_answer_rewards_period ON answer_rewards(period)');
     }
+
+    if (oldVersion < 6) {
+      // memos テーブルに tags カラムを追加（タグシステム対応）
+      await db.execute('''
+        ALTER TABLE memos ADD COLUMN tags TEXT NOT NULL DEFAULT ''
+      ''');
+    }
   }
 
   static Future<void> _createTables(Database db, int version) async {
@@ -116,6 +123,7 @@ class LocalDatabase {
         type TEXT NOT NULL,
         feeling TEXT NOT NULL,
         truth TEXT NOT NULL,
+        tags TEXT NOT NULL DEFAULT '',
         FOREIGN KEY (card_id) REFERENCES cards (id) ON DELETE CASCADE
       )
     ''');
@@ -250,6 +258,7 @@ class LocalDatabase {
         'type': memo.type,
         'feeling': memo.feeling,
         'truth': memo.truth,
+        'tags': memo.tags.join(','), // カンマ区切りで保存
       },
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
@@ -265,6 +274,9 @@ class LocalDatabase {
     );
 
     return List.generate(maps.length, (i) {
+      final tagsString = maps[i]['tags'] ?? '';
+      final tags = tagsString.isEmpty ? <String>[] : tagsString.split(',');
+
       return MemoData(
         cardId: maps[i]['card_id'],
         id: maps[i]['id'],
@@ -273,8 +285,14 @@ class LocalDatabase {
         type: maps[i]['type'],
         feeling: maps[i]['feeling'],
         truth: maps[i]['truth'],
+        tags: tags,
       );
     });
+  }
+
+  // 独立メモ（カードなし）を取得
+  static Future<List<MemoData>> getStandaloneMemos() async {
+    return await getMemosByCardId('standalone');
   }
 
   static Future<void> updateMemo(MemoData memo) async {
@@ -286,6 +304,7 @@ class LocalDatabase {
         'type': memo.type,
         'feeling': memo.feeling,
         'truth': memo.truth,
+        'tags': memo.tags.join(','), // カンマ区切りで保存
       },
       where: 'id = ?',
       whereArgs: [memo.id],
