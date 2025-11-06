@@ -3,13 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_functions/cloud_functions.dart';
-import 'subscription_screen.dart';
-import '../providers/auth_provider.dart';
+// import 'subscription_screen.dart'; // サブスクリプション機能一時停止
+// import '../providers/auth_provider.dart'; // 使用していない
 import '../providers/advice_provider.dart';
-import '../providers/subscription_status_notifier.dart';
+// import '../providers/subscription_status_notifier.dart'; // サブスクリプション機能一時停止
 import '../widgets/AIChat/user_bubble.dart';
 import '../widgets/AIChat/AI_response.dart';
-import '../widgets/AIChat/no_messages_placeholder.dart';
+// import '../widgets/AIChat/no_messages_placeholder.dart'; // サブスクリプション機能一時停止
 
 class AIChatScreen extends ConsumerStatefulWidget {
   final String cardId;
@@ -63,15 +63,15 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
   Future<void> _initialize() async {
     // _isInitializing = true; // フラグを直接操作
     try {
-      final isSubscribed = ref.read(subscriptionStatusProvider);
-
-      if (!isSubscribed) {
-        if (!_isShowedSubscriptionDialog) {
-          _isShowedSubscriptionDialog = true; // ダイアログを表示するフラグをセット
-          _showSubscriptionDialog = true; // ダイアログを表示するフラグをセット
-        }
-        return; // 未課金なら初期化を中断
-      }
+      // サブスクリプションチェックを一時的に無効化（iOS審査対応）
+      // final isSubscribed = ref.read(subscriptionStatusProvider);
+      // if (!isSubscribed) {
+      //   if (!_isShowedSubscriptionDialog) {
+      //     _isShowedSubscriptionDialog = true; // ダイアログを表示するフラグをセット
+      //     _showSubscriptionDialog = true; // ダイアログを表示するフラグをセット
+      //   }
+      //   return; // 未課金なら初期化を中断
+      // }
 
       ref.read(adviceNotifierProvider.notifier).updateAdvice(widget.memoId, 'AIアドバイスを取得中...');
       setState(() {
@@ -112,32 +112,32 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // ダイアログ表示（build メソッド内で）
-    if (_showSubscriptionDialog) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _showSubscriptionDialog = false; // 一度だけ表示するためにフラグをオフ
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: Text("AIアドバイスを受けるには"),
-            content: Text("AIアドバイスを受けるには、有料プランへの登録が必要です。"),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop(); // ダイアログを閉じる
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => SubscriptionScreen(),
-                    ),
-                  );
-                },
-                child: Text("有料プランへ"),
-              ),
-            ],
-          ),
-        );
-      });
-    }
+    // サブスクリプションダイアログを一時的に無効化（iOS審査対応）
+    // if (_showSubscriptionDialog) {
+    //   WidgetsBinding.instance.addPostFrameCallback((_) {
+    //     _showSubscriptionDialog = false; // 一度だけ表示するためにフラグをオフ
+    //     showDialog(
+    //       context: context,
+    //       builder: (context) => AlertDialog(
+    //         title: Text("AIアドバイスを受けるには"),
+    //         content: Text("AIアドバイスを受けるには、有料プランへの登録が必要です。"),
+    //         actions: [
+    //           TextButton(
+    //             onPressed: () {
+    //               Navigator.of(context).pop(); // ダイアログを閉じる
+    //               Navigator.of(context).push(
+    //                 MaterialPageRoute(
+    //                   builder: (context) => SubscriptionScreen(),
+    //                 ),
+    //               );
+    //             },
+    //             child: Text("有料プランへ"),
+    //           ),
+    //         ],
+    //       ),
+    //     );
+    //   });
+    // }
 
     if (_isInitializing) {
       return Scaffold(
@@ -292,13 +292,11 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
               return dateB.compareTo(dateA); // 降順 (新しい順)
             });
 
-            // 課金状態を確認
-            final isSubscribed = ref.watch(subscriptionStatusProvider);
-
-            // メッセージがなく、未課金の場合の専用画面
-            if (combinedMessages.isEmpty && !isSubscribed) {
-              return noMessagesPlaceholder(context);
-            }
+            // サブスクリプションチェックを一時的に無効化（iOS審査対応）
+            // final isSubscribed = ref.watch(subscriptionStatusProvider);
+            // if (combinedMessages.isEmpty && !isSubscribed) {
+            //   return noMessagesPlaceholder(context);
+            // }
 
             // リストの中で一番古いドキュメントを更新
             if (combinedMessages.isNotEmpty) {
@@ -489,40 +487,37 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
       _isSending = true; // 送信中フラグを立てる
     });
 
-    // 課金ユーザでないならDialogを表示
-    final isSubscribed = ref.watch(subscriptionStatusProvider);
-    if (!isSubscribed) {
-      // キーボードを閉じる
-      _messageFocusNode.unfocus();
-      // 有料プランのダイアログを表示
-      await showDialog(
-        context: context,
-        builder: (context) {
-          return AlertDialog(
-            title: Text("AIアドバイスを受けるには"),
-            content: Text("AIアドバイスを受けるには、有料プランへの登録が必要です。"),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => SubscriptionScreen(),
-                    ),
-                  );
-                },
-                child: Text("有料プランへ"),
-              ),
-            ],
-          );
-        },
-      );
-
-      setState(() {
-        _isSending = false; // 送信中フラグを解除
-      });
-      return;
-    }
+    // サブスクリプションチェックを一時的に無効化（iOS審査対応）
+    // final isSubscribed = ref.watch(subscriptionStatusProvider);
+    // if (!isSubscribed) {
+    //   _messageFocusNode.unfocus();
+    //   await showDialog(
+    //     context: context,
+    //     builder: (context) {
+    //       return AlertDialog(
+    //         title: Text("AIアドバイスを受けるには"),
+    //         content: Text("AIアドバイスを受けるには、有料プランへの登録が必要です。"),
+    //         actions: [
+    //           TextButton(
+    //             onPressed: () {
+    //               Navigator.pop(context);
+    //               Navigator.of(context).push(
+    //                 MaterialPageRoute(
+    //                   builder: (context) => SubscriptionScreen(),
+    //                 ),
+    //               );
+    //             },
+    //             child: Text("有料プランへ"),
+    //           ),
+    //         ],
+    //       );
+    //     },
+    //   );
+    //   setState(() {
+    //     _isSending = false;
+    //   });
+    //   return;
+    // }
 
     // Firestoreコレクションの参照を取得
     final collection = FirebaseFirestore.instance

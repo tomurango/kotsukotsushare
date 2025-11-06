@@ -3,14 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:purchases_flutter/purchases_flutter.dart';
+// import 'package:purchases_flutter/purchases_flutter.dart'; // サブスクリプション機能一時停止
 import 'tutorial_screen.dart';
 import 'how_to_use_screen.dart';
-import 'subscription_screen.dart';
+// import 'subscription_screen.dart'; // サブスクリプション機能一時停止
 import 'blocked_questions_screen.dart';
 import 'data_migration_screen.dart';
 import 'reward_management_screen.dart';
-import '../providers/subscription_status_notifier.dart';
+// import '../providers/subscription_status_notifier.dart'; // サブスクリプション機能一時停止
 import '../providers/resetAppState.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -20,30 +20,31 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = FirebaseAuth.instance.currentUser;
-    final isPremium = ref.watch(subscriptionStatusProvider);
+    // final isPremium = ref.watch(subscriptionStatusProvider); // サブスクリプション機能一時停止
 
     return ListView(
       children: [
-        // ========== プラン・報酬 ==========
-        _buildSectionHeader(context, 'プラン・報酬'),
+        // ========== 報酬 ==========
+        _buildSectionHeader(context, '報酬'),
 
-        _buildSettingItem(
-          context: context,
-          icon: Icons.subscriptions,
-          title: isPremium ? '現在のプラン: Premium' : '現在のプラン: Free',
-          subtitle: isPremium ? 'プレミアムプランをご利用中です' : 'プレミアムプランを購入できます',
-          onTap: () {
-            if (!isPremium) {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => SubscriptionScreen(),
-                ),
-              );
-            } else if (isPremium) {
-              _showSubscriptionManagementDialog(context);
-            }
-          },
-        ),
+        // サブスクリプション項目を一時的に非表示（iOS審査対応）
+        // _buildSettingItem(
+        //   context: context,
+        //   icon: Icons.subscriptions,
+        //   title: isPremium ? '現在のプラン: Premium' : '現在のプラン: Free',
+        //   subtitle: isPremium ? 'プレミアムプランをご利用中です' : 'プレミアムプランを購入できます',
+        //   onTap: () {
+        //     if (!isPremium) {
+        //       Navigator.of(context).push(
+        //         MaterialPageRoute(
+        //           builder: (context) => SubscriptionScreen(),
+        //         ),
+        //       );
+        //     } else if (isPremium) {
+        //       _showSubscriptionManagementDialog(context);
+        //     }
+        //   },
+        // ),
 
         _buildSettingItem(
           context: context,
