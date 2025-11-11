@@ -52,7 +52,7 @@ async function seedData() {
     const questions = [
       {
         id: 'question-1',
-        text: 'Flutterで状態管理は何が良いですか？',
+        text: '最近、自分に自信が持てなくて悩んでいます。同じような経験をした方、どうやって乗り越えましたか？',
         userId: 'test-user-1',
         userName: 'テストユーザー1',
         createdBy: 'test-user-1',
@@ -62,7 +62,7 @@ async function seedData() {
       },
       {
         id: 'question-2',
-        text: 'Riverpodの使い方を教えてください',
+        text: '仕事とプライベートのバランスが取れず、いつも疲れています。みなさんはどうやって両立していますか？',
         userId: 'test-user-2',
         userName: 'テストユーザー2',
         createdBy: 'test-user-2',
@@ -72,7 +72,7 @@ async function seedData() {
       },
       {
         id: 'question-3',
-        text: 'Firebase Emulatorの使い方は？',
+        text: '新しいことを始めたいけど、失敗するのが怖くて一歩踏み出せません。どうすれば勇気が出るでしょうか？',
         userId: 'test-user-3',
         userName: 'テストユーザー3',
         createdBy: 'test-user-3',
@@ -93,7 +93,7 @@ async function seedData() {
       {
         id: 'answer-1',
         questionId: 'question-1',
-        text: 'Riverpodがおすすめです！型安全で使いやすいですよ。',
+        text: '私も同じ経験があります。小さな成功体験を積み重ねることで、少しずつ自信を取り戻せました。できることから始めてみてください！',
         userId: 'test-user-2',
         userName: 'テストユーザー2',
         createdAt: admin.firestore.Timestamp.now(),
@@ -101,9 +101,17 @@ async function seedData() {
       {
         id: 'answer-2',
         questionId: 'question-2',
-        text: 'ProviderScopeでラップして、ref.watchで状態を監視します。',
+        text: '完璧を目指さないことが大切だと気づきました。仕事は8割の力で、残りの2割を自分の時間に使うようにしています。',
         userId: 'test-user-3',
         userName: 'テストユーザー3',
+        createdAt: admin.firestore.Timestamp.now(),
+      },
+      {
+        id: 'answer-3',
+        questionId: 'question-3',
+        text: '失敗は成長のチャンスです。最初から完璧にできる人なんていません。まずは小さく始めてみることをおすすめします！',
+        userId: 'test-user-1',
+        userName: 'テストユーザー1',
         createdAt: admin.firestore.Timestamp.now(),
       },
     ];
