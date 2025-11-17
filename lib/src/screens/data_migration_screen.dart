@@ -17,11 +17,12 @@ class DataMigrationScreen extends ConsumerWidget {
         backgroundColor: Color(0xFF008080),
         foregroundColor: Colors.white,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
             // 説明セクション
             Card(
               child: Padding(
@@ -30,7 +31,7 @@ class DataMigrationScreen extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'ローカルデータ移行について',
+                      'メモデータについて',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -38,32 +39,32 @@ class DataMigrationScreen extends ConsumerWidget {
                     ),
                     SizedBox(height: 8),
                     Text(
-                      'クラウド（Firebase）に保存されているカードとメモを、端末内のローカルストレージに移行します。',
+                      'chokushiiのメモ機能は原則としてローカルストレージ（端末内）を使用します。',
                       style: TextStyle(fontSize: 14),
                     ),
                     SizedBox(height: 12),
                     Text(
-                      'メリット:',
+                      '自動移行について:',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    Text('• 初回起動時に自動的にクラウドからローカルへ移行'),
+                    Text('• 既存のメモデータは自動的に保護されます'),
+                    Text('• 移行は透過的に実行され、操作不要'),
+                    SizedBox(height: 12),
+                    Text(
+                      'ローカル使用のメリット:',
                       style: TextStyle(fontWeight: FontWeight.bold),
                     ),
                     Text('• オフラインでも利用可能'),
                     Text('• アプリの動作が高速化'),
-                    Text('• データの読み込み時間短縮'),
+                    Text('• プライバシーの保護'),
                     SizedBox(height: 12),
                     Text(
                       '注意事項:',
                       style: TextStyle(fontWeight: FontWeight.bold, color: Colors.orange),
                     ),
                     Text('• 質問掲示板機能は引き続きクラウドを使用'),
-                    Text('• AI相談機能は引き続きクラウドを使用'),
-                    Text('• 移行後はローカルデータが優先されます'),
-                    if (migrationCompleted) ...[
-                      SizedBox(height: 8),
-                      Text(
-                        '• 一度移行したデータはクラウドに戻すことはできません',
-                        style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
-                      ),
-                    ],
+                    Text('• 自動移行に失敗した場合は手動で移行可能'),
                   ],
                 ),
               ),
@@ -229,14 +230,14 @@ class DataMigrationScreen extends ConsumerWidget {
               SizedBox(height: 20),
             ],
 
-            Spacer(),
+            SizedBox(height: 40),
 
-            // アクションボタン
+            // 手動移行ボタン（自動移行失敗時のバックアップ）
             if (migrationProgress.status != MigrationStatus.migrating) ...[
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: !useLocal && migrationProgress.status != MigrationStatus.migrating
+                  onPressed: migrationProgress.status != MigrationStatus.migrating && !migrationCompleted
                       ? () => _startMigration(context, ref, migrationService)
                       : null,
                   style: ElevatedButton.styleFrom(
@@ -245,35 +246,21 @@ class DataMigrationScreen extends ConsumerWidget {
                     padding: EdgeInsets.symmetric(vertical: 16),
                   ),
                   child: Text(
-                    !useLocal ? '移行を開始' : '移行済み',
+                    migrationCompleted ? '移行済み' : '手動で移行を開始',
                     style: TextStyle(fontSize: 16),
                   ),
                 ),
               ),
               SizedBox(height: 12),
-
-              // ローカルデータ切り替えボタン（移行完了後は非表示）
-              if (!migrationCompleted)
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton(
-                    onPressed: migrationProgress.status != MigrationStatus.migrating
-                        ? () => _toggleLocalData(context, ref)
-                        : null,
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Color(0xFF008080),
-                      side: BorderSide(color: Color(0xFF008080)),
-                      padding: EdgeInsets.symmetric(vertical: 16),
-                    ),
-                    child: Text(
-                      useLocal ? 'クラウドデータに戻す' : 'ローカルデータを使用',
-                      style: TextStyle(fontSize: 16),
-                    ),
-                  ),
-                ),
+              Text(
+                '※ 通常は自動移行されるため、このボタンは使用不要です',
+                style: TextStyle(fontSize: 12, color: Colors.grey),
+                textAlign: TextAlign.center,
+              ),
             ],
           ],
         ),
+      ),
       ),
     );
   }
@@ -328,18 +315,4 @@ class DataMigrationScreen extends ConsumerWidget {
     }
   }
 
-  void _toggleLocalData(BuildContext context, WidgetRef ref) async {
-    try {
-      final currentUseLocal = ref.read(useLocalDataProvider);
-      await ref.read(useLocalDataProvider.notifier).setUseLocal(!currentUseLocal);
-    } catch (e) {
-      // 移行完了後にクラウドに戻そうとした場合のエラー
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('移行完了後はクラウドデータに戻すことはできません'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
 }

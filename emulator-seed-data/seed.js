@@ -126,6 +126,98 @@ async function seedData() {
       console.log(`✓ Created answer for question: ${answer.questionId}`);
     }
 
+    // テストカード・メモを作成（自動移行テスト用）
+    console.log('\nCreating test cards and memos for migration test...');
+    const testCard = {
+      id: 'test-card-1',
+      title: 'テストカード',
+      description: 'テスト用のカード',
+      category: '',
+    };
+
+    await db.collection('users').doc('test-user-1')
+      .collection('cards').doc(testCard.id).set({
+        title: testCard.title,
+        description: testCard.description,
+        category: testCard.category,
+        createdAt: admin.firestore.Timestamp.now(),
+      });
+    console.log(`✓ Created test card: ${testCard.title}`);
+
+    const testMemos = [
+      {
+        id: 'memo-1',
+        content: '自動移行テスト用のメモ1です',
+        tags: ['テスト', '自動移行'],
+      },
+      {
+        id: 'memo-2',
+        content: '自動移行テスト用のメモ2です',
+        tags: ['開発', 'Firebase'],
+      },
+    ];
+
+    for (const memoData of testMemos) {
+      await db.collection('users').doc('test-user-1')
+        .collection('cards').doc(testCard.id)
+        .collection('memos').doc(memoData.id).set({
+          content: memoData.content,
+          type: '',
+          feeling: '',
+          truth: '',
+          tags: memoData.tags,
+          createdAt: admin.firestore.Timestamp.now(),
+          updatedAt: admin.firestore.Timestamp.now(),
+        });
+      console.log(`✓ Created test memo: ${memoData.content}`);
+    }
+
+    // 独立メモを作成（マイメモ画面に表示されるメモ）
+    console.log('\nCreating standalone memos for MyPage screen...');
+
+    // standaloneカードドキュメントを作成
+    await db.collection('users').doc('test-user-1')
+      .collection('cards').doc('standalone').set({
+        title: '',
+        description: '',
+        category: '',
+        createdAt: admin.firestore.Timestamp.now(),
+      });
+    console.log('✓ Created standalone card document');
+
+    const standaloneMemos = [
+      {
+        id: 'standalone-memo-1',
+        content: '今日はとても良い天気でした。散歩が楽しかった！',
+        tags: ['日常', '気分'],
+      },
+      {
+        id: 'standalone-memo-2',
+        content: 'プロジェクトの進捗が順調。チームワークが素晴らしい。',
+        tags: ['仕事', 'ポジティブ'],
+      },
+      {
+        id: 'standalone-memo-3',
+        content: '新しいアイデアを思いついた。明日試してみよう。',
+        tags: ['アイデア', '計画'],
+      },
+    ];
+
+    for (const memoData of standaloneMemos) {
+      await db.collection('users').doc('test-user-1')
+        .collection('cards').doc('standalone')
+        .collection('memos').doc(memoData.id).set({
+          content: memoData.content,
+          type: '',
+          feeling: '',
+          truth: '',
+          tags: memoData.tags,
+          createdAt: admin.firestore.Timestamp.now(),
+          updatedAt: admin.firestore.Timestamp.now(),
+        });
+      console.log(`✓ Created standalone memo: ${memoData.content}`);
+    }
+
     console.log('\n✅ Data seeding completed successfully!');
     process.exit(0);
   } catch (error) {

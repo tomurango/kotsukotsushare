@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/local_database.dart';
+import '../services/migration_service.dart';
 import '../providers/auth_provider.dart';
 import '../providers/card_memos_provider.dart';
 import '../models/memo_data.dart';
@@ -32,49 +33,86 @@ class UseLocalDataNotifier extends StateNotifier<bool> {
     if (_initialized) return;
 
     try {
+      print('🔍 [LocalDataProvider] Initializing...');
       final prefs = await ref.read(sharedPreferencesProvider.future);
       final user = FirebaseAuth.instance.currentUser;
 
       if (user != null) {
+        print('🔍 [LocalDataProvider] User authenticated: ${user.uid}');
         final key = 'use_local_data_${user.uid}';
         final migrationKey = 'migration_completed_${user.uid}';
+        final autoMigrationKey = 'auto_migration_done_${user.uid}';
 
         // 移行完了フラグをチェック
         _migrationCompleted = prefs.getBool(migrationKey) ?? false;
+        final autoMigrationDone = prefs.getBool(autoMigrationKey) ?? false;
 
-        // 既に設定が保存されている場合は読み込み
-        if (prefs.containsKey(key)) {
-          state = prefs.getBool(key) ?? false;
-        } else {
-          // 新規ユーザーまたは未設定の場合
+        print('🔍 [LocalDataProvider] Migration status:');
+        print('   - migrationCompleted: $_migrationCompleted');
+        print('   - autoMigrationDone: $autoMigrationDone');
+
+        // すべてのユーザーでローカル使用（原則ローカル）
+        state = true;
+        await prefs.setBool(key, true);
+        print('🔍 [LocalDataProvider] Set to use local data');
+
+        // 自動移行がまだ行われていない場合のみチェック
+        if (!autoMigrationDone && !_migrationCompleted) {
+          print('🔍 [LocalDataProvider] Checking for Firestore data...');
           final hasFirestoreData = await _checkFirestoreData();
+          print('🔍 [LocalDataProvider] Has Firestore data: $hasFirestoreData');
 
           if (hasFirestoreData) {
-            // Firestoreにデータがある既存ユーザー → デフォルトはクラウド使用
-            state = false;
+            // Firestoreにデータがある → 自動的にローカルに移行
+            print('🔍 [LocalDataProvider] Starting auto-migration...');
+            await _performAutoMigration();
+            await prefs.setBool(autoMigrationKey, true);
+            print('🔍 [LocalDataProvider] Auto-migration completed');
           } else {
-            // データのない新規ユーザー → デフォルトはローカル使用
-            state = true;
+            // データがない → 自動移行不要フラグを立てる
+            print('🔍 [LocalDataProvider] No data to migrate, marking as done');
+            await prefs.setBool(autoMigrationKey, true);
           }
-
-          // 設定を保存
-          await prefs.setBool(key, state);
+        } else {
+          print('🔍 [LocalDataProvider] Skipping auto-migration (already done or completed)');
         }
+      } else {
+        print('🔍 [LocalDataProvider] No user authenticated');
       }
 
       _initialized = true;
+      print('🔍 [LocalDataProvider] Initialization complete');
     } catch (e) {
-      // エラーの場合はデフォルト値（新規ユーザー向けローカル使用）
+      // エラーの場合もローカル使用
+      print('❌ [LocalDataProvider] Initialization error: $e');
       state = true;
       _initialized = true;
+    }
+  }
+
+  // 自動移行を実行（透過的にバックグラウンドで）
+  Future<void> _performAutoMigration() async {
+    try {
+      print('🔄 Auto-migrating Firestore data to local...');
+      final migrationService = ref.read(migrationServiceProvider);
+      await migrationService.migrateFromFirestore();
+      print('✅ Auto-migration completed successfully');
+    } catch (e) {
+      print('❌ Auto-migration failed: $e');
+      // エラーが発生してもローカル使用は継続
+      // ユーザーは手動でデータ管理画面から移行可能
     }
   }
 
   Future<bool> _checkFirestoreData() async {
     try {
       final user = FirebaseAuth.instance.currentUser;
-      if (user == null) return false;
+      if (user == null) {
+        print('🔍 [_checkFirestoreData] No user authenticated');
+        return false;
+      }
 
+      print('🔍 [_checkFirestoreData] Checking path: users/${user.uid}/cards');
       final cardsSnapshot = await FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
@@ -82,8 +120,14 @@ class UseLocalDataNotifier extends StateNotifier<bool> {
           .limit(1)
           .get();
 
+      print('🔍 [_checkFirestoreData] Found ${cardsSnapshot.docs.length} cards');
+      if (cardsSnapshot.docs.isNotEmpty) {
+        print('🔍 [_checkFirestoreData] First card ID: ${cardsSnapshot.docs.first.id}');
+      }
+
       return cardsSnapshot.docs.isNotEmpty;
     } catch (e) {
+      print('❌ [_checkFirestoreData] Error: $e');
       return false;
     }
   }

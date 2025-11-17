@@ -56,6 +56,7 @@ class MigrationService {
   // Firestoreからローカルにデータを移行
   Future<void> migrateFromFirestore() async {
     try {
+      print('🔄 [Migration] Starting migration...');
       // 移行開始
       ref.read(migrationProgressProvider.notifier).state = MigrationProgress(
         status: MigrationStatus.migrating,
@@ -65,6 +66,7 @@ class MigrationService {
       if (user == null) {
         throw Exception('ユーザーが認証されていません');
       }
+      print('🔄 [Migration] User: ${user.uid}');
 
       // 1. カードデータを取得
       final cardsSnapshot = await FirebaseFirestore.instance
@@ -74,6 +76,7 @@ class MigrationService {
           .get();
 
       final totalCards = cardsSnapshot.docs.length;
+      print('🔄 [Migration] Found $totalCards cards');
       int migratedCards = 0;
       int totalMemos = 0;
       int migratedMemos = 0;
@@ -96,6 +99,9 @@ class MigrationService {
       // 2. 各カードを移行
       for (var cardDoc in cardsSnapshot.docs) {
         final cardData = cardDoc.data();
+        print('🔄 [Migration] Migrating card: ${cardDoc.id}');
+        print('   - title: ${cardData['title']}');
+
         final card = CardData(
           id: cardDoc.id,
           title: cardData['title'] ?? '',
@@ -103,9 +109,10 @@ class MigrationService {
           category: cardData['category'] ?? '',
         );
 
-        // カードをローカルに保存
+        // カードをローカルに保存（参照用に残す）
         await LocalDatabase.insertCard(card);
         migratedCards++;
+        print('   ✅ Card saved to local DB (for reference)');
 
         // プログレス更新
         ref.read(migrationProgressProvider.notifier).state = MigrationProgress(
@@ -121,21 +128,53 @@ class MigrationService {
             .collection('memos')
             .get();
 
+        print('🔄 [Migration] Found ${memosSnapshot.docs.length} memos for card ${cardDoc.id}');
+
         for (var memoDoc in memosSnapshot.docs) {
           final memoData = memoDoc.data();
+          print('   🔄 Migrating memo: ${memoDoc.id}');
+          print('      - content: ${memoData['content']}');
+
+          // tagsフィールドの処理（Firestoreではリスト、ローカルでは文字列配列）
+          final tagsData = memoData['tags'];
+          List<String> tags = [];
+          if (tagsData is List) {
+            tags = List<String>.from(tagsData);
+          }
+
+          // カードタイトルをタグとして追加（マイメモ画面でタグ分類できるように）
+          final cardTitle = cardData['title'] ?? '';
+          if (cardTitle.isNotEmpty && !tags.contains(cardTitle)) {
+            tags.add(cardTitle);
+          }
+          print('      - tags (with card title): $tags');
+
+          // createdAtのnullチェック
+          DateTime createdAt;
+          if (memoData['createdAt'] != null) {
+            createdAt = (memoData['createdAt'] as Timestamp).toDate();
+          } else {
+            // createdAtがnullの場合は現在時刻を使用
+            createdAt = DateTime.now();
+            print('      ⚠️  createdAt is null, using current time');
+          }
+
+          // 独立メモとして保存（マイメモ画面で表示されるように）
           final memo = MemoData(
-            cardId: cardDoc.id,
+            cardId: 'standalone',  // 独立メモとして保存
             id: memoDoc.id,
             content: memoData['content'] ?? '',
-            createdAt: (memoData['createdAt'] as Timestamp).toDate(),
+            createdAt: createdAt,
             type: memoData['type'] ?? '',
             feeling: memoData['feeling'] ?? '',
             truth: memoData['truth'] ?? '',
+            tags: tags,
           );
 
           // メモをローカルに保存
           await LocalDatabase.insertMemo(memo);
           migratedMemos++;
+          print('      ✅ Memo saved to local DB as standalone with card title tag');
 
           // プログレス更新
           ref.read(migrationProgressProvider.notifier).state = MigrationProgress(
@@ -149,6 +188,10 @@ class MigrationService {
       }
 
       // 移行完了
+      print('✅ [Migration] Migration completed!');
+      print('   - Cards: $migratedCards/$totalCards');
+      print('   - Memos: $migratedMemos/$totalMemos');
+
       ref.read(migrationProgressProvider.notifier).state = MigrationProgress(
         status: MigrationStatus.completed,
         totalCards: totalCards,
@@ -162,6 +205,7 @@ class MigrationService {
 
     } catch (e) {
       // エラー処理
+      print('❌ [Migration] Migration failed: $e');
       ref.read(migrationProgressProvider.notifier).state = MigrationProgress(
         status: MigrationStatus.error,
         errorMessage: e.toString(),
