@@ -10,6 +10,12 @@ import '../services/local_database.dart';
 import '../models/memo_data.dart';
 import '../widgets/standalone_memo_bottom_sheet.dart';
 
+// タグの展開状態を管理するプロバイダー
+final tagExpansionStateProvider = StateProvider<Map<String, bool>>((ref) => {});
+
+// タグ展開状態のバージョン管理（強制リビルド用）
+final tagExpansionVersionProvider = StateProvider<int>((ref) => 0);
+
 class MypageScreen extends ConsumerWidget {
   final Function(int) onNavigate;
 
@@ -43,37 +49,77 @@ class MypageScreen extends ConsumerWidget {
                 bottom: BorderSide(color: Colors.grey.shade300),
               ),
             ),
-            child: Row(
+            child: Column(
               children: [
-                Text(
-                  '表示モード:',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.grey[700],
-                  ),
-                ),
-                SizedBox(width: 12),
-                Expanded(
-                  child: SegmentedButton<MemoViewMode>(
-                    segments: [
-                      ButtonSegment(
-                        value: MemoViewMode.chronological,
-                        label: Text('時系列'),
-                        icon: Icon(Icons.access_time, size: 18),
+                Row(
+                  children: [
+                    Text(
+                      '表示モード:',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey[700],
                       ),
-                      ButtonSegment(
-                        value: MemoViewMode.tags,
-                        label: Text('タグ分類'),
-                        icon: Icon(Icons.label, size: 18),
+                    ),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: SegmentedButton<MemoViewMode>(
+                        segments: [
+                          ButtonSegment(
+                            value: MemoViewMode.chronological,
+                            label: Text('時系列'),
+                            icon: Icon(Icons.access_time, size: 18),
+                          ),
+                          ButtonSegment(
+                            value: MemoViewMode.tags,
+                            label: Text('タグ分類'),
+                            icon: Icon(Icons.label, size: 18),
+                          ),
+                        ],
+                        selected: {viewMode},
+                        onSelectionChanged: (Set<MemoViewMode> newSelection) {
+                          ref.read(standaloneMemoViewModeProvider.notifier).state = newSelection.first;
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+                // タグ分類モードの時のみ、一括展開/折りたたみボタンを表示
+                if (viewMode == MemoViewMode.tags) ...[
+                  SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton.icon(
+                        icon: Icon(Icons.unfold_more, size: 18),
+                        label: Text('全て展開', style: TextStyle(fontSize: 12)),
+                        style: TextButton.styleFrom(
+                          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          minimumSize: Size(0, 0),
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        onPressed: () {
+                          final memos = ref.read(unifiedStandaloneMemosProvider).value ?? [];
+                          _expandAllTags(ref, memos);
+                        },
+                      ),
+                      SizedBox(width: 8),
+                      TextButton.icon(
+                        icon: Icon(Icons.unfold_less, size: 18),
+                        label: Text('全て閉じる', style: TextStyle(fontSize: 12)),
+                        style: TextButton.styleFrom(
+                          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          minimumSize: Size(0, 0),
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        onPressed: () {
+                          final memos = ref.read(unifiedStandaloneMemosProvider).value ?? [];
+                          _collapseAllTags(ref, memos);
+                        },
                       ),
                     ],
-                    selected: {viewMode},
-                    onSelectionChanged: (Set<MemoViewMode> newSelection) {
-                      ref.read(standaloneMemoViewModeProvider.notifier).state = newSelection.first;
-                    },
                   ),
-                ),
+                ],
               ],
             ),
           ),
@@ -260,15 +306,29 @@ class MypageScreen extends ConsumerWidget {
         return a.compareTo(b);
       });
 
+    // 展開状態を取得
+    final expansionState = ref.watch(tagExpansionStateProvider);
+    final expansionVersion = ref.watch(tagExpansionVersionProvider);
+
     return ListView.builder(
       itemCount: sortedTags.length,
       padding: const EdgeInsets.all(0),
       itemBuilder: (context, index) {
         final tag = sortedTags[index];
         final tagMemos = groupedMemos[tag]!;
+        final isExpanded = expansionState[tag] ?? true; // デフォルトは展開
 
         return ExpansionTile(
-          initiallyExpanded: true,
+          key: Key('$tag-$expansionVersion-$isExpanded'), // バージョンと状態を含めて強制リビルド
+          initiallyExpanded: isExpanded,
+          onExpansionChanged: (expanded) {
+            // 展開状態を更新
+            final currentState = ref.read(tagExpansionStateProvider);
+            ref.read(tagExpansionStateProvider.notifier).state = {
+              ...currentState,
+              tag: expanded,
+            };
+          },
           leading: Icon(
             tag == '未分類' ? Icons.label_off : Icons.label,
             color: tag == '未分類' ? Colors.grey : Colors.blue,
@@ -537,5 +597,52 @@ class MypageScreen extends ConsumerWidget {
         );
       }
     }
+  }
+
+  // 全てのタグを展開
+  void _expandAllTags(WidgetRef ref, List<MemoData> memos) {
+    // 全てのタグを取得
+    final tags = _getAllTags(memos);
+
+    // 全て展開状態にする
+    final newState = <String, bool>{};
+    for (var tag in tags) {
+      newState[tag] = true;
+    }
+
+    ref.read(tagExpansionStateProvider.notifier).state = newState;
+
+    // バージョンをインクリメントして強制リビルド
+    ref.read(tagExpansionVersionProvider.notifier).state++;
+  }
+
+  // 全てのタグを折りたたむ
+  void _collapseAllTags(WidgetRef ref, List<MemoData> memos) {
+    // 全てのタグを取得
+    final tags = _getAllTags(memos);
+
+    // 全て折りたたみ状態にする
+    final newState = <String, bool>{};
+    for (var tag in tags) {
+      newState[tag] = false;
+    }
+
+    ref.read(tagExpansionStateProvider.notifier).state = newState;
+
+    // バージョンをインクリメントして強制リビルド
+    ref.read(tagExpansionVersionProvider.notifier).state++;
+  }
+
+  // 全てのタグを取得するヘルパー
+  Set<String> _getAllTags(List<MemoData> memos) {
+    final tags = <String>{};
+    for (var memo in memos) {
+      if (memo.tags.isEmpty) {
+        tags.add('未分類');
+      } else {
+        tags.addAll(memo.tags);
+      }
+    }
+    return tags;
   }
 }
