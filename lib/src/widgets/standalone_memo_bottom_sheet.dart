@@ -18,6 +18,10 @@ class StandaloneMemoBottomSheet extends ConsumerStatefulWidget {
 
 class _StandaloneMemoBottomSheetState extends ConsumerState<StandaloneMemoBottomSheet> {
   final contentController = TextEditingController();
+  final tagController = TextEditingController();
+  List<String> selectedTags = [];
+  List<String> allTags = [];
+  bool _showAllTags = false;
 
   @override
   void initState() {
@@ -25,7 +29,17 @@ class _StandaloneMemoBottomSheetState extends ConsumerState<StandaloneMemoBottom
     // 編集時は既存データをセット
     if (widget.memo != null) {
       contentController.text = widget.memo!.content;
+      selectedTags = List.from(widget.memo!.tags);
     }
+    _loadAllTags();
+  }
+
+  Future<void> _loadAllTags() async {
+    // ローカルDBから取得（使用回数順）
+    final tags = await LocalDatabase.getAllTags();
+    setState(() {
+      allTags = tags;
+    });
   }
 
   @override
@@ -62,6 +76,112 @@ class _StandaloneMemoBottomSheetState extends ConsumerState<StandaloneMemoBottom
             autofocus: !isEditing, // 新規作成時は自動フォーカス
           ),
           SizedBox(height: 16),
+          // タグセクション
+          Text(
+            'タグ',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          SizedBox(height: 8),
+          // 選択中のタグ表示
+          if (selectedTags.isNotEmpty)
+            Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              children: selectedTags.map((tag) {
+                return Chip(
+                  label: Text(tag),
+                  backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                  deleteIcon: Icon(Icons.close, size: 18),
+                  onDeleted: () {
+                    setState(() {
+                      selectedTags.remove(tag);
+                    });
+                  },
+                );
+              }).toList(),
+            ),
+          if (selectedTags.isNotEmpty) SizedBox(height: 8),
+          // 既存タグから選択
+          if (allTags.isNotEmpty) ...[
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  '既存のタグから選択',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey[700],
+                  ),
+                ),
+                if (allTags.length > 5)
+                  TextButton.icon(
+                    icon: Icon(
+                      _showAllTags ? Icons.expand_less : Icons.expand_more,
+                      size: 18,
+                    ),
+                    label: Text(
+                      _showAllTags ? '閉じる' : 'もっと見る (${allTags.length}個)',
+                      style: TextStyle(fontSize: 12),
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _showAllTags = !_showAllTags;
+                      });
+                    },
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      minimumSize: Size(0, 0),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                  ),
+              ],
+            ),
+            SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              children: (_showAllTags ? allTags : allTags.take(5))
+                  .where((tag) => !selectedTags.contains(tag))
+                  .map((tag) {
+                return ActionChip(
+                  label: Text(tag),
+                  onPressed: () {
+                    setState(() {
+                      selectedTags.add(tag);
+                    });
+                  },
+                );
+              }).toList(),
+            ),
+            SizedBox(height: 8),
+          ],
+          // 新規タグ追加
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: tagController,
+                  decoration: InputDecoration(
+                    labelText: '新しいタグを追加',
+                    hintText: '例：仕事、勉強、趣味',
+                    border: OutlineInputBorder(),
+                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  ),
+                  onSubmitted: (value) => _addNewTag(),
+                ),
+              ),
+              SizedBox(width: 8),
+              IconButton(
+                icon: Icon(Icons.add),
+                onPressed: _addNewTag,
+                tooltip: 'タグを追加',
+              ),
+            ],
+          ),
+          SizedBox(height: 8),
           Text(
             '※ メモは公開されません',
             style: TextStyle(color: Colors.grey, fontSize: 12),
@@ -116,7 +236,7 @@ class _StandaloneMemoBottomSheetState extends ConsumerState<StandaloneMemoBottom
           type: '',
           feeling: '',
           truth: '',
-          tags: widget.memo?.tags ?? [],
+          tags: selectedTags,
         );
 
         if (widget.memo != null) {
@@ -138,7 +258,7 @@ class _StandaloneMemoBottomSheetState extends ConsumerState<StandaloneMemoBottom
           'type': '',
           'feeling': '',
           'truth': '',
-          'tags': widget.memo?.tags ?? [],
+          'tags': selectedTags,
           'updatedAt': Timestamp.now(),
         };
 
@@ -170,9 +290,24 @@ class _StandaloneMemoBottomSheetState extends ConsumerState<StandaloneMemoBottom
     }
   }
 
+  void _addNewTag() {
+    final newTag = tagController.text.trim();
+    if (newTag.isNotEmpty && !selectedTags.contains(newTag)) {
+      setState(() {
+        selectedTags.add(newTag);
+        if (!allTags.contains(newTag)) {
+          allTags.add(newTag);
+          allTags.sort();
+        }
+      });
+      tagController.clear();
+    }
+  }
+
   @override
   void dispose() {
     contentController.dispose();
+    tagController.dispose();
     super.dispose();
   }
 }

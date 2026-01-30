@@ -295,6 +295,33 @@ class LocalDatabase {
     return await getMemosByCardId('standalone');
   }
 
+  // 全メモから既存のタグを取得（使用回数順、降順）
+  static Future<List<String>> getAllTags() async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'memos',
+      columns: ['tags'],
+    );
+
+    // タグごとの使用回数をカウント
+    final Map<String, int> tagCountMap = {};
+    for (var map in maps) {
+      final tagsString = map['tags'] as String?;
+      if (tagsString != null && tagsString.isNotEmpty) {
+        final tags = tagsString.split(',');
+        for (var tag in tags) {
+          tagCountMap[tag] = (tagCountMap[tag] ?? 0) + 1;
+        }
+      }
+    }
+
+    // 使用回数順にソート（降順）
+    final sortedTags = tagCountMap.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+
+    return sortedTags.map((entry) => entry.key).toList();
+  }
+
   static Future<void> updateMemo(MemoData memo) async {
     final db = await database;
     await db.update(

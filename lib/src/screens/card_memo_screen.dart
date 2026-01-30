@@ -503,13 +503,18 @@ class CardMemoScreen extends ConsumerWidget {
   }
 
   // タグ編集ダイアログ
-  void _showTagEditDialog(BuildContext context, WidgetRef ref, MemoData memo) {
+  void _showTagEditDialog(BuildContext context, WidgetRef ref, MemoData memo) async {
     final TextEditingController tagController = TextEditingController();
     final selectedTags = List<String>.from(memo.tags);
+
+    // 全タグを読み込み（使用回数順）
+    final allTags = await LocalDatabase.getAllTags();
 
     showDialog(
       context: context,
       builder: (dialogContext) {
+        bool showAllTags = false;
+
         return StatefulBuilder(
           builder: (context, setState) {
             return AlertDialog(
@@ -519,15 +524,17 @@ class CardMemoScreen extends ConsumerWidget {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // 既存のタグを表示
+                    // 選択中のタグを表示
                     if (selectedTags.isNotEmpty) ...[
-                      Text('現在のタグ:', style: TextStyle(fontWeight: FontWeight.bold)),
+                      Text('選択中のタグ:', style: TextStyle(fontWeight: FontWeight.bold)),
                       SizedBox(height: 8),
                       Wrap(
                         spacing: 8,
+                        runSpacing: 4,
                         children: selectedTags.map((tag) {
                           return Chip(
                             label: Text(tag),
+                            backgroundColor: Theme.of(context).colorScheme.primaryContainer,
                             deleteIcon: Icon(Icons.close, size: 18),
                             onDeleted: () {
                               setState(() {
@@ -539,14 +546,71 @@ class CardMemoScreen extends ConsumerWidget {
                       ),
                       SizedBox(height: 16),
                     ],
-                    // タグ追加入力
+
+                    // 既存タグから選択
+                    if (allTags.isNotEmpty) ...[
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            '既存のタグから選択',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          if (allTags.length > 5)
+                            TextButton.icon(
+                              icon: Icon(
+                                showAllTags ? Icons.expand_less : Icons.expand_more,
+                                size: 18,
+                              ),
+                              label: Text(
+                                showAllTags ? '閉じる' : 'もっと見る (${allTags.length}個)',
+                                style: TextStyle(fontSize: 12),
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  showAllTags = !showAllTags;
+                                });
+                              },
+                              style: TextButton.styleFrom(
+                                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                minimumSize: Size(0, 0),
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              ),
+                            ),
+                        ],
+                      ),
+                      SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 4,
+                        children: (showAllTags ? allTags : allTags.take(5))
+                            .where((tag) => !selectedTags.contains(tag))
+                            .map((tag) {
+                          return ActionChip(
+                            label: Text(tag),
+                            onPressed: () {
+                              setState(() {
+                                selectedTags.add(tag);
+                              });
+                            },
+                          );
+                        }).toList(),
+                      ),
+                      SizedBox(height: 16),
+                    ],
+
+                    // 新規タグ追加
                     Text('新しいタグを追加:', style: TextStyle(fontWeight: FontWeight.bold)),
                     SizedBox(height: 8),
                     TextField(
                       controller: tagController,
                       decoration: InputDecoration(
-                        hintText: 'タグ名を入力',
+                        hintText: '例：仕事、勉強、趣味',
                         border: OutlineInputBorder(),
+                        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                         suffixIcon: IconButton(
                           icon: Icon(Icons.add),
                           onPressed: () {
