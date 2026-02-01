@@ -44,13 +44,20 @@ class QuestionAnswersList extends HookConsumerWidget {
           return null;
         }, [questionId, currentUser?.uid]);
 
-        // ✅ Cloud Functions の取得完了後、キャッシュに反映
+        // ✅ Cloud Functions の取得完了後、キャッシュに反映（初回取得時も含む）
         useEffect(() {
+          // 初回取得時もキャッシュに反映
+          answersState.whenData((answers) {
+            ref.read(cachedAnswersProvider.notifier).updateAnswers(questionId, answers);
+          });
+
+          // 以降の変更も監視してキャッシュに反映
           ref.listen(answersProvider(questionId), (previous, next) {
             next.whenData((answers) {
               ref.read(cachedAnswersProvider.notifier).updateAnswers(questionId, answers);
             });
           });
+
           return null;
         }, [questionId]);
 

@@ -44,7 +44,7 @@ final questionsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async
 });
 */
 
-final questionsProvider = FutureProvider.autoDispose<List<Map<String, dynamic>>>((ref) async {
+final questionsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
   final user = ref.watch(authStateProvider).value;
   if (user == null) return [];
 
