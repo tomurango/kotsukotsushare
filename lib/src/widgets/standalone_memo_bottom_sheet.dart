@@ -47,17 +47,23 @@ class _StandaloneMemoBottomSheetState extends ConsumerState<StandaloneMemoBottom
     final isKeyboardVisible = MediaQuery.of(context).viewInsets.bottom > 0;
     final isEditing = widget.memo != null;
 
-    return Padding(
-      padding: EdgeInsets.only(
-        left: 16.0,
-        right: 16.0,
-        top: 16.0,
-        bottom: isKeyboardVisible ? MediaQuery.of(context).viewInsets.bottom : 16.0,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+    return GestureDetector(
+      onTap: () {
+        // 空白部分タップでフォーカス解除
+        FocusScope.of(context).unfocus();
+      },
+      child: Padding(
+        padding: EdgeInsets.only(
+          left: 16.0,
+          right: 16.0,
+          top: 16.0,
+          bottom: isKeyboardVisible ? MediaQuery.of(context).viewInsets.bottom : 16.0,
+        ),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
           Text(
             isEditing ? 'メモを編集' : '新しいメモ',
             style: TextStyle(
@@ -210,6 +216,8 @@ class _StandaloneMemoBottomSheetState extends ConsumerState<StandaloneMemoBottom
             ),
           ),
         ],
+      ),
+        ),
       ),
     );
   }
