@@ -22,6 +22,7 @@ class MainScreen extends HookConsumerWidget {
     final userData = ref.watch(userDataProvider);
     final selectedQuestionScreen = ref.watch(selectedQuestionScreenProvider);
     final isExpanded = ref.watch(isExpandedProvider); // 🔥 `bool` 値を取得
+    final isAnswerFieldFocused = ref.watch(answerFieldFocusProvider); // 回答欄フォーカス状態
 
     // ローカルデータプロバイダーの初期化を開始
     ref.watch(useLocalDataProvider);
@@ -62,7 +63,7 @@ class MainScreen extends HookConsumerWidget {
         onNavigate: (index) => selectedIndex.value = index,
         selectedIndex: selectedIndex.value,
       ),
-      floatingActionButton: selectedIndex.value == 1 && selectedQuestionScreen == 0 && !isExpanded
+      floatingActionButton: selectedIndex.value == 1 && selectedQuestionScreen == 0 && !isExpanded && !isAnswerFieldFocused
         ? Container(
             margin: EdgeInsets.only(bottom: 70), // ← ここで高さを調整（30px 上に移動
             child: QuestionFAB(),
@@ -70,7 +71,7 @@ class MainScreen extends HookConsumerWidget {
         : null,
       // 右下
       floatingActionButtonLocation: FloatingActionButtonLocation.endDocked,
-      bottomSheet: selectedIndex.value == 1 && selectedQuestionScreen == 0
+      bottomSheet: selectedIndex.value == 1 && selectedQuestionScreen == 0 && !isAnswerFieldFocused
           ? ConstrainedBox(
               constraints: BoxConstraints(
                 maxHeight: MediaQuery.of(context).size.height * 0.4, // 画面の40%まで

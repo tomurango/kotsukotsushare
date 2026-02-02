@@ -18,6 +18,23 @@ class QuestionBoardScreen extends ConsumerStatefulWidget {
 
 class _QuestionBoardScreenState extends ConsumerState<QuestionBoardScreen> {
   final TextEditingController _answerController = TextEditingController();
+  final FocusNode _answerFocusNode = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    // フォーカス状態の変更を監視
+    _answerFocusNode.addListener(() {
+      ref.read(answerFieldFocusProvider.notifier).state = _answerFocusNode.hasFocus;
+    });
+  }
+
+  @override
+  void dispose() {
+    _answerFocusNode.dispose();
+    _answerController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -65,11 +82,16 @@ class _QuestionBoardScreenState extends ConsumerState<QuestionBoardScreen> {
 
 
 
-        return SingleChildScrollView(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+        return GestureDetector(
+          onTap: () {
+            // 画面の空白部分をタップしたときにフォーカスを外す
+            FocusScope.of(context).unfocus();
+          },
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
               // チャットUIスタイル：自分の質問は右寄せ、他人は左寄せ
               Align(
                 alignment: isMine ? Alignment.centerRight : Alignment.centerLeft,
@@ -153,6 +175,7 @@ class _QuestionBoardScreenState extends ConsumerState<QuestionBoardScreen> {
                 ),
                 child: TextField(
                   controller: _answerController,
+                  focusNode: _answerFocusNode,
                   decoration: InputDecoration(
                     border: InputBorder.none,
                     contentPadding: EdgeInsets.all(12),
@@ -236,6 +259,7 @@ class _QuestionBoardScreenState extends ConsumerState<QuestionBoardScreen> {
               QuestionAnswersList(),
             ],
           ),
+        ),
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),

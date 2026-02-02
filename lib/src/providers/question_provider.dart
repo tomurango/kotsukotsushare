@@ -73,3 +73,6 @@ final isExpandedProvider = StateProvider<bool>((ref) => false);
 
 // 表示する画面の状態を管理するProvider
 final selectedQuestionScreenProvider = StateProvider((ref) => 0); // 0: 質問一覧, 1: 質問入力画面
+
+// 回答欄のフォーカス状態を管理するProvider
+final answerFieldFocusProvider = StateProvider<bool>((ref) => false);
