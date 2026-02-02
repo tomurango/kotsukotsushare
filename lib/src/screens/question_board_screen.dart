@@ -88,7 +88,12 @@ class _QuestionBoardScreenState extends ConsumerState<QuestionBoardScreen> {
             FocusScope.of(context).unfocus();
           },
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16.0),
+            padding: EdgeInsets.only(
+              left: 16.0,
+              right: 16.0,
+              top: 16.0,
+              bottom: MediaQuery.of(context).size.height * 0.5, // BottomSheet分の余白（画面の50%）
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
