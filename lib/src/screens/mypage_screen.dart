@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../providers/auth_provider.dart';
 import '../providers/local_data_provider.dart';
 import '../providers/card_memos_provider.dart';
@@ -15,6 +16,98 @@ final tagExpansionStateProvider = StateProvider<Map<String, bool>>((ref) => {});
 
 // タグ展開状態のバージョン管理（強制リビルド用）
 final tagExpansionVersionProvider = StateProvider<int>((ref) => 0);
+
+// 利用可能なアイコンリスト
+final availableTagIcons = {
+  'label': Icons.label,
+  'work': Icons.work,
+  'school': Icons.school,
+  'sports_soccer': Icons.sports_soccer,
+  'restaurant': Icons.restaurant,
+  'shopping_cart': Icons.shopping_cart,
+  'book': Icons.book,
+  'favorite': Icons.favorite,
+  'home': Icons.home,
+  'flight': Icons.flight,
+  'music_note': Icons.music_note,
+  'sports_esports': Icons.sports_esports,
+  'fitness_center': Icons.fitness_center,
+  'palette': Icons.palette,
+  'camera_alt': Icons.camera_alt,
+  'pets': Icons.pets,
+};
+
+// タグアイコンを管理するプロバイダー
+class TagIconNotifier extends StateNotifier<Map<String, String>> {
+  TagIconNotifier() : super({}) {
+    _loadIcons();
+  }
+
+  Future<void> _loadIcons() async {
+    final prefs = await SharedPreferences.getInstance();
+    final keys = prefs.getKeys().where((key) => key.startsWith('tag_icon_'));
+    final icons = <String, String>{};
+    for (var key in keys) {
+      final tag = key.replaceFirst('tag_icon_', '');
+      final iconKey = prefs.getString(key);
+      if (iconKey != null) {
+        icons[tag] = iconKey;
+      }
+    }
+    state = icons;
+  }
+
+  Future<void> setIcon(String tag, String iconKey) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('tag_icon_$tag', iconKey);
+    state = {...state, tag: iconKey};
+  }
+
+  IconData getIcon(String tag) {
+    final iconKey = state[tag];
+    if (iconKey != null && availableTagIcons.containsKey(iconKey)) {
+      return availableTagIcons[iconKey]!;
+    }
+    return tag == '未分類' ? Icons.label_off : Icons.label;
+  }
+}
+
+final tagIconProvider = StateNotifierProvider<TagIconNotifier, Map<String, String>>((ref) {
+  return TagIconNotifier();
+});
+
+// タグの並び順を管理するプロバイダー
+class TagOrderNotifier extends StateNotifier<List<String>> {
+  TagOrderNotifier() : super([]) {
+    _loadOrder();
+  }
+
+  Future<void> _loadOrder() async {
+    final prefs = await SharedPreferences.getInstance();
+    final order = prefs.getStringList('tag_order') ?? [];
+    state = order;
+  }
+
+  Future<void> saveOrder(List<String> order) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList('tag_order', order);
+    state = order;
+  }
+
+  Future<void> reorder(int oldIndex, int newIndex) async {
+    final newOrder = List<String>.from(state);
+    if (newIndex > oldIndex) {
+      newIndex -= 1;
+    }
+    final item = newOrder.removeAt(oldIndex);
+    newOrder.insert(newIndex, item);
+    await saveOrder(newOrder);
+  }
+}
+
+final tagOrderProvider = StateNotifierProvider<TagOrderNotifier, List<String>>((ref) {
+  return TagOrderNotifier();
+});
 
 class MypageScreen extends ConsumerWidget {
   final Function(int) onNavigate;
@@ -116,6 +209,18 @@ class MypageScreen extends ConsumerWidget {
                           final memos = ref.read(unifiedStandaloneMemosProvider).value ?? [];
                           _collapseAllTags(ref, memos);
                         },
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 4),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Icon(Icons.info_outline, size: 14, color: Colors.grey[600]),
+                      SizedBox(width: 4),
+                      Text(
+                        '全て閉じると並び替えできます',
+                        style: TextStyle(fontSize: 11, color: Colors.grey[600]),
                       ),
                     ],
                   ),
@@ -299,27 +404,59 @@ class MypageScreen extends ConsumerWidget {
       }
     }
 
-    final sortedTags = groupedMemos.keys.toList()
-      ..sort((a, b) {
-        if (a == '未分類') return 1;
-        if (b == '未分類') return -1;
-        return a.compareTo(b);
+    // 保存された順番を取得
+    final savedOrder = ref.watch(tagOrderProvider);
+
+    // タグをソート（保存された順番がある場合はそれに従う、なければアルファベット順）
+    final sortedTags = groupedMemos.keys.toList();
+    sortedTags.sort((a, b) {
+      final aIndex = savedOrder.indexOf(a);
+      final bIndex = savedOrder.indexOf(b);
+
+      // 両方とも保存された順番にある場合
+      if (aIndex != -1 && bIndex != -1) {
+        return aIndex.compareTo(bIndex);
+      }
+      // aのみ保存された順番にある場合
+      if (aIndex != -1) return -1;
+      // bのみ保存された順番にある場合
+      if (bIndex != -1) return 1;
+
+      // どちらも保存された順番にない場合はデフォルトのソート
+      if (a == '未分類') return 1;
+      if (b == '未分類') return -1;
+      return a.compareTo(b);
+    });
+
+    // 新しいタグがあれば、保存された順番に追加
+    if (sortedTags.length != savedOrder.length || !sortedTags.every((tag) => savedOrder.contains(tag))) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(tagOrderProvider.notifier).saveOrder(sortedTags);
       });
+    }
 
     // 展開状態を取得
     final expansionState = ref.watch(tagExpansionStateProvider);
     final expansionVersion = ref.watch(tagExpansionVersionProvider);
 
-    return ListView.builder(
+    // 全てのタグが閉じているかチェック
+    final allTagsClosed = sortedTags.every((tag) => expansionState[tag] == false);
+
+    // 全て閉じている場合のみReorderableListViewを使用
+    if (allTagsClosed) {
+      return ReorderableListView.builder(
       itemCount: sortedTags.length,
       padding: const EdgeInsets.all(0),
+      onReorder: (oldIndex, newIndex) {
+        ref.read(tagOrderProvider.notifier).reorder(oldIndex, newIndex);
+      },
       itemBuilder: (context, index) {
         final tag = sortedTags[index];
         final tagMemos = groupedMemos[tag]!;
         final isExpanded = expansionState[tag] ?? true; // デフォルトは展開
 
         return ExpansionTile(
-          key: Key('$tag-$expansionVersion-$isExpanded'), // バージョンと状態を含めて強制リビルド
+          key: ValueKey('$tag-$expansionVersion'), // タグとバージョンでユニークなキー
           initiallyExpanded: isExpanded,
           onExpansionChanged: (expanded) {
             // 展開状態を更新
@@ -329,9 +466,16 @@ class MypageScreen extends ConsumerWidget {
               tag: expanded,
             };
           },
-          leading: Icon(
-            tag == '未分類' ? Icons.label_off : Icons.label,
-            color: tag == '未分類' ? Colors.grey : Colors.blue,
+          leading: GestureDetector(
+            onTap: () {
+              if (tag != '未分類') {
+                _showIconSelectDialog(context, ref, tag);
+              }
+            },
+            child: Icon(
+              ref.watch(tagIconProvider.notifier).getIcon(tag),
+              color: tag == '未分類' ? Colors.grey : Colors.blue,
+            ),
           ),
           title: Text(
             '$tag (${tagMemos.length})',
@@ -340,6 +484,20 @@ class MypageScreen extends ConsumerWidget {
               fontWeight: FontWeight.bold,
               color: tag == '未分類' ? Colors.grey : Colors.black87,
             ),
+          ),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                isExpanded ? Icons.expand_less : Icons.expand_more,
+                color: Colors.grey,
+              ),
+              SizedBox(width: 8),
+              Icon(
+                Icons.drag_handle,
+                color: Colors.grey,
+              ),
+            ],
           ),
           children: tagMemos.map((memo) {
             return Container(
@@ -393,6 +551,109 @@ class MypageScreen extends ConsumerWidget {
                             PopupMenuItem(value: 'delete', child: Text('削除')),
                           ],
                         ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }).toList(),
+        );
+      },
+    );
+    }
+
+    // 展開されているタグがある場合は通常のListView（並び替え不可）
+    return ListView.builder(
+      itemCount: sortedTags.length,
+      padding: const EdgeInsets.all(0),
+      itemBuilder: (context, index) {
+        final tag = sortedTags[index];
+        final tagMemos = groupedMemos[tag]!;
+        final isExpanded = expansionState[tag] ?? true; // デフォルトは展開
+
+        return ExpansionTile(
+          key: ValueKey('$tag-$expansionVersion'), // タグとバージョンでユニークなキー
+          initiallyExpanded: isExpanded,
+          onExpansionChanged: (expanded) {
+            // 展開状態を更新
+            final currentState = ref.read(tagExpansionStateProvider);
+            ref.read(tagExpansionStateProvider.notifier).state = {
+              ...currentState,
+              tag: expanded,
+            };
+          },
+          leading: GestureDetector(
+            onTap: () {
+              if (tag != '未分類') {
+                _showIconSelectDialog(context, ref, tag);
+              }
+            },
+            child: Icon(
+              ref.watch(tagIconProvider.notifier).getIcon(tag),
+              color: tag == '未分類' ? Colors.grey : Colors.blue,
+            ),
+          ),
+          title: Text(
+            '$tag (${tagMemos.length})',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: tag == '未分類' ? Colors.grey : Colors.black87,
+            ),
+          ),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                isExpanded ? Icons.expand_less : Icons.expand_more,
+                color: Colors.grey,
+              ),
+            ],
+          ),
+          children: tagMemos.map((memo) {
+            return Container(
+              decoration: BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(color: Colors.grey.shade300),
+                ),
+              ),
+              child: ListTile(
+                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+                dense: true,
+                title: Text(
+                  memo.content,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontSize: 14),
+                ),
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(height: 4),
+                    Text(
+                      formatDate(memo.createdAt),
+                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                    ),
+                  ],
+                ),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    PopupMenuButton<String>(
+                      onSelected: (value) {
+                        switch (value) {
+                          case 'edit':
+                            _editMemo(context, memo);
+                            break;
+                          case 'delete':
+                            _deleteMemo(context, ref, memo);
+                            break;
+                        }
+                      },
+                      itemBuilder: (BuildContext context) => [
+                        PopupMenuItem(value: 'edit', child: Text('編集')),
+                        PopupMenuItem(value: 'delete', child: Text('削除')),
                       ],
                     ),
                   ],
@@ -710,5 +971,54 @@ class MypageScreen extends ConsumerWidget {
       }
     }
     return tags;
+  }
+
+  // タグアイコン選択ダイアログ
+  void _showIconSelectDialog(BuildContext context, WidgetRef ref, String tag) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('$tag のアイコンを選択'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: GridView.builder(
+              shrinkWrap: true,
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 4,
+                mainAxisSpacing: 8,
+                crossAxisSpacing: 8,
+              ),
+              itemCount: availableTagIcons.length,
+              itemBuilder: (context, index) {
+                final entry = availableTagIcons.entries.elementAt(index);
+                final iconKey = entry.key;
+                final icon = entry.value;
+
+                return InkWell(
+                  onTap: () {
+                    ref.read(tagIconProvider.notifier).setIcon(tag, iconKey);
+                    Navigator.of(context).pop();
+                  },
+                  child: Container(
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey[300]!),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(icon, size: 32, color: Colors.blue),
+                  ),
+                );
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text('キャンセル'),
+            ),
+          ],
+        );
+      },
+    );
   }
 }
