@@ -26,7 +26,7 @@
 **chokushiiの今後:**
 - 現在の内省・成長フォーカスを維持
 - Firebase基盤の既存アーキテクチャを継続
-- コミュニティ機能（質問掲示板）やAI相談機能を活かした発展
+- コミュニティ機能（質問掲示板）を活かした発展
 
 **オモイダシの位置づけ:**
 - chokushiiの兄弟サービス
@@ -50,9 +50,8 @@ flutter build ios
 - **セキュリティ**: ユーザー単位でのアクセス制御
 
 ### 既存機能の保持
-- カードメモ機能
+- カードメモ機能（ローカルファースト移行済み）
 - 質問掲示板機能
-- AI相談機能（Vertex AI連携）
 - ブロック・報告機能
 - プレミアム機能（RevenueCat）
 
@@ -269,10 +268,71 @@ answer_rewards/{rewardId}/
 - ユーザーフィードバック収集
 - フェーズ2（本番課金）への移行判断
 
-### AI相談機能について
-- **現在の状態**: ローカル使用時でも利用可能（メッセージ履歴はFirestore保存）
-- **削除予定**: AI相談機能は将来的に削除予定
-- **将来方針**: AI相談履歴のローカル移管（読み取り専用）を検討
+### AI相談機能について ❌ **削除済み（2025年2月5日）**
+- **削除理由**: ローカル移行後、カードベースのUI削除により到達不可能になったため
+- **削除ファイル**:
+  - `lib/src/screens/ai_chat_screen.dart`
+  - `lib/src/screens/card_memo_screen.dart`
+  - `lib/src/screens/create_card_screen.dart`
+  - `lib/src/providers/advice_provider.dart`
+- **将来方針**: 必要に応じてgit履歴から復元可能、その際は現在のローカル・タグベース設計に合わせて再実装
 
 ---
-*最終更新: 2025年10月27日*
+
+## 既知の問題・TODO（2026年1月）
+
+### 🔴 質問掲示板：回答投稿でPerspective API 403エラー
+
+**問題:**
+本番環境で質問掲示板に回答を投稿すると、Perspective API（有害コンテンツ検出）で403エラーが発生し、回答投稿が失敗する。
+
+```
+❌ 回答の追加に失敗: AxiosError: Request failed with status code 403
+at checkToxicity (addAnswer.js:18)
+```
+
+**原因:**
+Firebase Functions（Gen2）にデプロイ時、環境変数`PERSPECTIVE_API_KEY`が正しく設定されていない。
+
+- `firebase functions:config:set`で設定した値は、Gen2では自動的に環境変数にマッピングされない
+- APIキー自体は有効（手動テストでは動作確認済み）
+
+**暫定対応（2026年1月9日）:** ✅ **デプロイ済み**
+`addAnswer.js`にエラーハンドリングを追加し、Perspective API/Vertex AIが失敗しても処理を続行するように修正。
+
+```javascript
+// Perspective API失敗時は承認扱いで続行
+try {
+  toxicity = await checkToxicity(answerText);
+  toxicityIsOK = toxicity < 0.7;
+} catch (error) {
+  console.warn("⚠️ Perspective API failed, skipping toxicity check:", error.message);
+  toxicityIsOK = true;
+}
+```
+
+**根本解決（TODO）:**
+環境変数を正しく設定して再デプロイする：
+
+```bash
+# 方法1: Secret Managerを使用（推奨）
+firebase functions:secrets:set PERSPECTIVE_API_KEY
+# → プロンプトでAPIキーを入力: AIzaSyCrzV2rGm4h1Ar6OC-Ides6gcdzpZy9sbg
+
+# 方法2: firebase.jsonで環境変数を設定
+# functions配列に環境変数を追加
+
+# 方法3: gcloudコマンドで直接設定
+gcloud functions deploy addAnswer \
+  --gen2 \
+  --set-env-vars="PERSPECTIVE_API_KEY=AIzaSyCrzV2rGm4h1Ar6OC-Ides6gcdzpZy9sbg"
+```
+
+**影響:**
+- 現状：有害コンテンツ検出なしで回答が投稿される（暫定対応により機能は動作）
+- 対応後：有害コンテンツを自動検出し、適切にフィルタリングできる
+
+**優先度:** 中（機能は動作しているが、コンテンツモデレーション機能が無効）
+
+---
+*最終更新: 2026年2月5日*
