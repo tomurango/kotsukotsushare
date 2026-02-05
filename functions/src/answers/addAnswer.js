@@ -58,13 +58,29 @@ exports.addAnswer = onCall(async (request) => {
       throw new functions.https.HttpsError("invalid-argument", "Invalid request data");
     }
 
-    // 1. Perspectiveで暴言チェック
-    const toxicity = await checkToxicity(answerText);
-    const toxicityIsOK = toxicity < 0.7;
+    // 1. Perspectiveで暴言チェック（エラー時はスキップ）
+    let toxicity = 0;
+    let toxicityIsOK = true;
+    try {
+      toxicity = await checkToxicity(answerText);
+      toxicityIsOK = toxicity < 0.7;
+    } catch (error) {
+      console.warn("⚠️ Perspective API failed, skipping toxicity check:", error.message);
+      // Perspective API失敗時は承認扱いで続行
+      toxicityIsOK = true;
+    }
 
-    // 2. Geminiで内容チェック
-    const aiResult = await validateWithAI(questionText, answerText);
-    const aiResultNormalized = aiResult?.trim()?.toUpperCase();
+    // 2. Geminiで内容チェック（エラー時はスキップ）
+    let aiResult = "OK";
+    let aiResultNormalized = "OK";
+    try {
+      aiResult = await validateWithAI(questionText, answerText);
+      aiResultNormalized = aiResult?.trim()?.toUpperCase();
+    } catch (error) {
+      console.warn("⚠️ Vertex AI failed, skipping AI validation:", error.message);
+      // Vertex AI失敗時は承認扱いで続行
+      aiResultNormalized = "OK";
+    }
 
     // 3. status を条件に応じて決定
     let status = "approved";
